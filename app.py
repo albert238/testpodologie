@@ -38,44 +38,54 @@ def landing(request: Request):
 @app.get("/init")
 def init(db: OrmSession = Depends(get_db)):
     token = seed.upsert_seed(db=db)
-    return RedirectResponse(url=f"/t/{token}", status_code=302)
+    return RedirectResponse(url=f"/t/{token}/profil", status_code=302)
 
 
 @app.post("/start")
 def start(db: OrmSession = Depends(get_db)):
     token = seed.upsert_seed(db=db)
+    return RedirectResponse(url=f"/t/{token}/profil", status_code=302)
+
+
+# ── Page profil candidat ──────────────────────────────────────────────────────
+
+@app.get("/t/{token}/profil", response_class=HTMLResponse)
+def profil_form(token: str, request: Request, db: OrmSession = Depends(get_db)):
+    sess = db.query(models.Session).filter(models.Session.token == token).first()
+    if not sess:
+        return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
+    return templates.TemplateResponse("profil.html", {"request": request, "token": token})
+
+
+@app.post("/t/{token}/profil", response_class=HTMLResponse)
+async def profil_save(token: str, request: Request, db: OrmSession = Depends(get_db)):
+    sess = db.query(models.Session).filter(models.Session.token == token).first()
+    if not sess:
+        return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
+
+    form = await request.form()
+    sess.prenom      = form.get("prenom", "").strip()
+    sess.nom         = form.get("nom", "").strip()
+    sess.role        = form.get("role", "").strip()
+    sess.experience  = form.get("experience", "").strip()
+    sess.shop_type   = form.get("shop_type", "").strip()
+    sess.consent     = bool(form.get("consent"))
+    db.commit()
+
     return RedirectResponse(url=f"/t/{token}", status_code=302)
 
 
-@app.get("/admin", response_class=HTMLResponse)
-def admin(request: Request, db: OrmSession = Depends(get_db)):
-    sessions = db.query(models.Session).order_by(models.Session.id.desc()).limit(200).all()
-    return templates.TemplateResponse("admin.html", {"request": request, "sessions": sessions})
-
-
-@app.get("/admin/export.csv")
-def export_csv(db: OrmSession = Depends(get_db)):
-    out = io.StringIO()
-    w = csv.writer(out)
-    w.writerow(["created_at", "token", "consent", "role", "experience", "shop_type"])
-
-    sessions = db.query(models.Session).order_by(models.Session.id.desc()).all()
-    for s in sessions:
-        w.writerow([s.created_at, s.token, int(s.consent), s.role, s.experience, s.shop_type])
-
-    out.seek(0)
-    return StreamingResponse(
-        iter([out.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=podotest_sessions.csv"},
-    )
-
+# ── Quiz ──────────────────────────────────────────────────────────────────────
 
 @app.get("/t/{token}", response_class=HTMLResponse)
 def take_quiz(token: str, request: Request, db: OrmSession = Depends(get_db)):
     sess = db.query(models.Session).filter(models.Session.token == token).first()
     if not sess:
         return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
+
+    # Rediriger vers profil si pas encore rempli
+    if not sess.prenom:
+        return RedirectResponse(url=f"/t/{token}/profil", status_code=302)
 
     quiz = db.query(models.Quiz).filter(models.Quiz.id == sess.quiz_id).first()
     if not quiz:
@@ -94,19 +104,12 @@ def take_quiz(token: str, request: Request, db: OrmSession = Depends(get_db)):
             choices = json.loads(q.choices_json or "[]")
         except Exception:
             choices = []
-        q_payload.append(
-            {
-                "id": q.id,
-                "kind": q.kind,
-                "topic": q.topic,
-                "text": q.text,
-                "choices": choices,
-            }
-        )
+        q_payload.append({"id": q.id, "kind": q.kind, "topic": q.topic, "text": q.text, "choices": choices})
 
     return templates.TemplateResponse(
         "quiz.html",
-        {"request": request, "quiz_title": quiz.title, "token": token, "questions": q_payload},
+        {"request": request, "quiz_title": quiz.title, "token": token,
+         "questions": q_payload, "prenom": sess.prenom},
     )
 
 
@@ -118,7 +121,6 @@ async def submit_quiz(token: str, request: Request, db: OrmSession = Depends(get
 
     form = await request.form()
 
-    # récup questions
     questions = (
         db.query(models.Question)
         .filter(models.Question.quiz_id == sess.quiz_id)
@@ -126,10 +128,9 @@ async def submit_quiz(token: str, request: Request, db: OrmSession = Depends(get
         .all()
     )
 
-    # enregistre réponses + calc correct
+    correct_count = 0
     for q in questions:
         key = f"q{q.id}"
-
         if q.kind == "multi":
             selected_ids = sorted([str(x) for x in form.getlist(key)])
         else:
@@ -141,8 +142,9 @@ async def submit_quiz(token: str, request: Request, db: OrmSession = Depends(get
         except Exception:
             choices = []
         correct_ids = sorted([c.get("id") for c in choices if c.get("is_correct")])
-
         is_correct = (selected_ids == correct_ids)
+        if is_correct:
+            correct_count += 1
 
         existing = (
             db.query(models.Answer)
@@ -153,14 +155,63 @@ async def submit_quiz(token: str, request: Request, db: OrmSession = Depends(get
             existing.selected_json = json.dumps(selected_ids, ensure_ascii=False)
             existing.is_correct = is_correct
         else:
-            db.add(
-                models.Answer(
-                    session_id=sess.id,
-                    question_id=q.id,
-                    selected_json=json.dumps(selected_ids, ensure_ascii=False),
-                    is_correct=is_correct,
-                )
-            )
+            db.add(models.Answer(
+                session_id=sess.id,
+                question_id=q.id,
+                selected_json=json.dumps(selected_ids, ensure_ascii=False),
+                is_correct=is_correct,
+            ))
 
     db.commit()
-    return templates.TemplateResponse("done.html", {"request": request, "message": "Merci ! Réponses enregistrées ✅"})
+    total = len(questions)
+    return templates.TemplateResponse("done.html", {
+        "request": request,
+        "message": f"Merci {sess.prenom} ! Réponses enregistrées ✅",
+        "correct": correct_count,
+        "total": total,
+        "prenom": sess.prenom,
+    })
+
+
+# ── Admin ─────────────────────────────────────────────────────────────────────
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin(request: Request, db: OrmSession = Depends(get_db)):
+    sessions = db.query(models.Session).order_by(models.Session.id.desc()).limit(200).all()
+
+    # Pour chaque session, calculer le score
+    sessions_data = []
+    for s in sessions:
+        answers = db.query(models.Answer).filter(models.Answer.session_id == s.id).all()
+        total_q = db.query(models.Question).filter(models.Question.quiz_id == s.quiz_id).count()
+        correct = sum(1 for a in answers if a.is_correct)
+        sessions_data.append({
+            "session": s,
+            "correct": correct,
+            "total": total_q,
+            "score_pct": round(correct / total_q * 100) if total_q else 0,
+        })
+
+    return templates.TemplateResponse("admin.html", {"request": request, "sessions_data": sessions_data})
+
+
+@app.get("/admin/export.csv")
+def export_csv(db: OrmSession = Depends(get_db)):
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["date", "token", "prenom", "nom", "role", "experience", "type_magasin", "score", "total", "score_pct"])
+
+    sessions = db.query(models.Session).order_by(models.Session.id.desc()).all()
+    for s in sessions:
+        answers = db.query(models.Answer).filter(models.Answer.session_id == s.id).all()
+        total_q = db.query(models.Question).filter(models.Question.quiz_id == s.quiz_id).count()
+        correct = sum(1 for a in answers if a.is_correct)
+        pct = round(correct / total_q * 100) if total_q else 0
+        w.writerow([s.created_at, s.token, s.prenom, s.nom, s.role, s.experience, s.shop_type, correct, total_q, pct])
+
+    out.seek(0)
+    return StreamingResponse(
+        iter([out.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=podotest_resultats.csv"},
+    )

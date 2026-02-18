@@ -30,7 +30,10 @@
   <div class="quiz-wrap">
     <div class="card">
       <h1 style="margin-bottom:4px">{{ quiz_title }}</h1>
-      <p class="muted small" style="margin-bottom:20px">{{ questions|length }} question(s) — prenez votre temps.</p>
+      <p class="muted small" style="margin-bottom:4px">
+        Bonjour <strong>{{ prenom }}</strong> — {{ questions|length }} questions — prenez votre temps.
+      </p>
+      <p class="muted small" style="margin-bottom:20px">Étape 2 / 2</p>
 
       <div class="progress-bar">
         <div class="progress-fill" id="progress" style="width:0%"></div>

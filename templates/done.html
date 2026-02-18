@@ -3,18 +3,47 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <link rel="stylesheet" href="/static/style.css">
-  <title>Merci – PodoTest</title>
+  <title>Résultat – PodoTest</title>
   <style>
-    .done-wrap { max-width:500px; margin:60px auto; padding:0 16px; text-align:center; }
-    .big-icon { font-size:4rem; margin-bottom:16px; }
-    h2 { font-size:1.8rem; margin-bottom:12px; }
+    .done-wrap { max-width:500px; margin:50px auto; padding:0 16px; text-align:center; }
+    .big-icon { font-size:3.5rem; margin-bottom:12px; }
+    .score-display { font-size:3rem; font-weight:800; color:#4f8ef7; line-height:1; margin:12px 0 4px; }
+    .score-label { font-size:1rem; color:#6b7280; margin-bottom:20px; }
+    .mention { display:inline-block; padding:6px 16px; border-radius:20px; font-weight:700; font-size:.9rem; margin-bottom:18px; }
+    .mention.excellent { background:#d1fae5; color:#065f46; }
+    .mention.bien { background:#dbeafe; color:#1e40af; }
+    .mention.moyen { background:#fef3c7; color:#92400e; }
   </style>
 </head>
 <body class="page">
-  <div class="done-wrap card">
-    <div class="big-icon">🎉</div>
-    <h2>{{ message }}</h2>
-    <p class="muted">Vous pouvez fermer cette page.</p>
-    <a class="btn" href="/" style="margin-top:20px; display:inline-block">Retour à l'accueil</a>
+  <div class="done-wrap">
+    <div class="card">
+      {% if correct is defined %}
+        <div class="big-icon">
+          {% if correct == total %}🏆{% elif correct >= (total * 0.6) %}🎉{% else %}📚{% endif %}
+        </div>
+        <h2 style="margin-bottom:4px">Merci {{ prenom }} !</h2>
+        <p class="muted" style="margin-bottom:16px">Voici votre résultat :</p>
+        <div class="score-display">{{ correct }} / {{ total }}</div>
+        <div class="score-label">bonnes réponses</div>
+
+        {% set pct = (correct / total * 100) | int %}
+        {% if pct >= 80 %}
+          <div class="mention excellent">Excellent – {{ pct }}%</div>
+        {% elif pct >= 60 %}
+          <div class="mention bien">Bien – {{ pct }}%</div>
+        {% else %}
+          <div class="mention moyen">À approfondir – {{ pct }}%</div>
+        {% endif %}
+
+        <p class="muted" style="font-size:.9rem">Vos réponses ont été enregistrées. Vous pouvez fermer cette page.</p>
+      {% else %}
+        <div class="big-icon">✅</div>
+        <h2>{{ message }}</h2>
+        <p class="muted">Vous pouvez fermer cette page.</p>
+      {% endif %}
+
+      <a class="btn secondary" href="/" style="margin-top:16px; display:inline-block">← Retour à l'accueil</a>
+    </div>
   </div>
 </body></html>

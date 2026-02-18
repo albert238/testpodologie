@@ -31,6 +31,9 @@ class Session(Base):
     quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+    # Profil candidat
+    prenom: Mapped[str] = mapped_column(String, default="")
+    nom: Mapped[str] = mapped_column(String, default="")
     consent: Mapped[bool] = mapped_column(Boolean, default=False)
     role: Mapped[str] = mapped_column(String, default="")
     experience: Mapped[str] = mapped_column(String, default="")
