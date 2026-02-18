@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr"><head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" href="/static/style.css">
+  <title>PodoTest</title>
+</head>
+<body class="page">
+  <div class="wrap">
+
+    <header class="hero card">
+      <div class="hero-left">
+        <div class="badge">Podologie • Formation vendeurs</div>
+        <div class="muted small">{{ byline }}</div>
+        <h1>PodoTest</h1>
+        <p class="lead">Questionnaire mobile rapide (5–7 minutes).</p>
+
+        <form method="post" action="/start" class="cta">
+          <button class="btn">Faire le quiz</button>
+          <a class="btn secondary" href="/admin">Admin</a>
+        </form>
+
+        <p class="muted small">Astuce: <code>/init</code> démarre aussi un quiz.</p>
+      </div>
+
+      <div class="hero-right">
+        <img class="hero-img" src="/static/foot.jpg" alt="Illustration pied">
+      </div>
+    </header>
+
+  </div>
+</body></html>

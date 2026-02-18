@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fr"><head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" href="/static/style.css">
+  <title>{{ quiz_title }}</title>
+  <style>
+    .quiz-wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
+    .progress-bar { background: #e8eaf0; border-radius: 8px; height: 8px; margin-bottom: 24px; }
+    .progress-fill { background: #4f8ef7; height: 8px; border-radius: 8px; transition: width .3s ease; }
+    .question-card { display: none; }
+    .question-card.active { display: block; }
+    .question-num { font-size:.85rem; color:#888; margin-bottom:8px; }
+    .question-topic { display:inline-block; background:#eef2ff; color:#4f8ef7; font-size:.78rem; font-weight:600; padding:3px 10px; border-radius:20px; margin-bottom:12px; }
+    .question-text { font-size:1.1rem; font-weight:600; margin-bottom:18px; line-height:1.5; }
+    .choice-label { display:flex; align-items:flex-start; gap:12px; padding:12px 14px; border:2px solid #e8eaf0; border-radius:10px; margin-bottom:10px; cursor:pointer; transition:border-color .15s, background .15s; }
+    .choice-label:hover { border-color:#4f8ef7; background:#f5f8ff; }
+    .choice-label input { margin-top:3px; accent-color:#4f8ef7; flex-shrink:0; }
+    .choice-label.selected { border-color:#4f8ef7; background:#eef2ff; }
+    .hint { font-size:.82rem; color:#aaa; margin-top:6px; }
+    .nav-btns { display:flex; gap:10px; margin-top:24px; }
+    .nav-btns .btn { flex:1; }
+    .msg-feedback { min-height:24px; font-size:.9rem; color:#555; margin-top:10px; }
+    .final-card { text-align:center; padding:32px 16px; }
+    .final-card h2 { font-size:1.6rem; margin-bottom:12px; }
+    .score-big { font-size:3rem; font-weight:700; color:#4f8ef7; }
+  </style>
+</head>
+<body class="page">
+  <div class="quiz-wrap">
+    <div class="card">
+      <h1 style="margin-bottom:4px">{{ quiz_title }}</h1>
+      <p class="muted small" style="margin-bottom:20px">{{ questions|length }} question(s) — prenez votre temps.</p>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress" style="width:0%"></div>
+      </div>
+
+      <!-- Questions générées côté serveur, navigation JS côté client -->
+      <form id="quizForm" method="post" action="/t/{{ token }}">
+        {% for q in questions %}
+        <div class="question-card{% if loop.first %} active{% endif %}" id="qcard-{{ loop.index0 }}">
+          <div class="question-num">Question {{ loop.index }} / {{ questions|length }}</div>
+          <div class="question-topic">{{ q.topic }}</div>
+          <div class="question-text">{{ q.text }}</div>
+
+          {% if q.kind == "single" %}
+            {% for c in q.choices %}
+            <label class="choice-label" id="lbl-{{ q.id }}-{{ c.id }}">
+              <input type="radio" name="q{{ q.id }}" value="{{ c.id }}"
+                     onchange="highlightChoice(this)">
+              <span>{{ c.label }}</span>
+            </label>
+            {% endfor %}
+          {% else %}
+            {% for c in q.choices %}
+            <label class="choice-label" id="lbl-{{ q.id }}-{{ c.id }}">
+              <input type="checkbox" name="q{{ q.id }}" value="{{ c.id }}"
+                     onchange="highlightChoice(this)">
+              <span>{{ c.label }}</span>
+            </label>
+            {% endfor %}
+            <p class="hint">Plusieurs réponses possibles.</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        <!-- Carte finale (soumission) -->
+        <div class="question-card" id="qcard-final">
+          <div class="final-card">
+            <div style="font-size:3rem">✅</div>
+            <h2>Tout est rempli !</h2>
+            <p class="muted">Cliquez sur <strong>Envoyer</strong> pour valider vos réponses.</p>
+            <button type="submit" class="btn" style="margin-top:16px; width:100%">Envoyer mes réponses</button>
+          </div>
+        </div>
+      </form>
+
+      <div class="msg-feedback" id="msg"></div>
+
+      <div class="nav-btns" id="navBtns">
+        <button class="btn secondary" id="btnPrev" onclick="navigate(-1)" type="button">← Précédent</button>
+        <button class="btn" id="btnNext" onclick="navigate(1)" type="button">Suivant →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TOTAL = {{ questions|length }};
+    let current = 0; // 0..TOTAL-1 = questions, TOTAL = carte finale
+
+    function showCard(idx) {
+      document.querySelectorAll('.question-card').forEach(c => c.classList.remove('active'));
+      const id = idx < TOTAL ? 'qcard-' + idx : 'qcard-final';
+      document.getElementById(id).classList.add('active');
+
+      // Barre de progression
+      const pct = Math.round((idx / TOTAL) * 100);
+      document.getElementById('progress').style.width = pct + '%';
+
+      // Boutons
+      document.getElementById('btnPrev').disabled = (idx === 0);
+      const navBtns = document.getElementById('navBtns');
+      if (idx >= TOTAL) {
+        navBtns.style.display = 'none'; // carte finale = bouton submit intégré
+      } else {
+        navBtns.style.display = 'flex';
+        document.getElementById('btnNext').textContent = (idx === TOTAL - 1) ? 'Terminer ✓' : 'Suivant →';
+      }
+
+      document.getElementById('msg').textContent = '';
+    }
+
+    function navigate(dir) {
+      const next = current + dir;
+      if (next < 0) return;
+      if (next > TOTAL) return;
+      current = next;
+      showCard(current);
+    }
+
+    function highlightChoice(input) {
+      // Met à jour la mise en évidence visuelle
+      const card = input.closest('.question-card');
+      if (input.type === 'radio') {
+        card.querySelectorAll('.choice-label').forEach(l => l.classList.remove('selected'));
+        input.closest('.choice-label').classList.add('selected');
+      } else {
+        if (input.checked) input.closest('.choice-label').classList.add('selected');
+        else input.closest('.choice-label').classList.remove('selected');
+      }
+    }
+
+    // Init
+    showCard(0);
+  </script>
+</body></html>
