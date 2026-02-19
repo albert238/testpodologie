@@ -78,7 +78,7 @@ async def profil_save(token: str, request: Request, db: OrmSession = Depends(get
         return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
 
     form = await request.form()
-    sess.prenom     = form.get("prenoom", "").strip()
+    sess.prenom     = form.get("prenom", "").strip()
     sess.nom        = form.get("nom", "").strip()
     sess.role       = form.get("role", "").strip()
     sess.experience = form.get("experience", "").strip()
