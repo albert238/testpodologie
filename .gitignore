@@ -2,3 +2,5 @@
 __pycache__/
 podotest.sqlite3
 *.sqlite3
+!Source-B-PDFs/
+!Source-B-PDFs/*.pdf
