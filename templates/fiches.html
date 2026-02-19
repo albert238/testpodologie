@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="fr"><head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/static/style.css">
+  <title>Fiches – PodoTest</title>
+  <style>
+    .fiches-wrap { max-width: 720px; margin: 0 auto; padding: 28px 16px; }
+
+    /* Navigation fiches */
+    .fiche-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+    .fiche-dots {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      flex: 1;
+    }
+    .fiche-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .fiche-dot.active  { background: var(--teal); transform: scale(1.3); }
+    .fiche-dot.visited { background: var(--green); }
+
+    /* Cards fiches */
+    .fiche-card { display: none; animation: fadeUp .25s ease; }
+    .fiche-card.active { display: block; }
+
+    .fiche-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+    .fiche-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .fiche-num {
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--teal);
+      margin-bottom: 2px;
+    }
+    .fiche-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    /* Sections dans la fiche */
+    .fiche-section { margin-bottom: 18px; }
+    .fiche-section-title {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--teal);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .fiche-section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .fiche-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .fiche-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: .92rem;
+      line-height: 1.55;
+      padding: 7px 10px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border-left: 3px solid var(--border);
+    }
+    .fiche-list li::before {
+      content: '•';
+      color: var(--teal);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .fiche-list.danger li  { border-left-color: var(--red);   background: #fff8f8; }
+    .fiche-list.success li { border-left-color: var(--green); background: #f0fdf4; }
+    .fiche-list.info li    { border-left-color: var(--blue);  background: #eff6ff; }
+    .fiche-list.gold li    { border-left-color: var(--gold);  background: #fffbeb; }
+
+    .fiche-def {
+      font-size: .95rem;
+      line-height: 1.7;
+      color: var(--text);
+      padding: 12px 16px;
+      background: var(--teal-lt);
+      border-radius: 10px;
+      border-left: 3px solid var(--teal);
+      margin-bottom: 16px;
+    }
+
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .conseil-shoe {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, var(--teal-lt), var(--blue-lt));
+      border-radius: 12px;
+      border: 1px solid rgba(13,148,136,.2);
+      font-size: .9rem;
+      line-height: 1.55;
+    }
+    .conseil-shoe .shoe-icon { font-size: 1.4rem; flex-shrink:0; }
+
+    /* Barre progression */
+    .progress-track { height: 6px; background: var(--border); border-radius: 999px; margin-bottom: 24px; overflow: hidden; }
+    .progress-fill  { height: 100%; background: linear-gradient(90deg, var(--teal), var(--green)); border-radius: 999px; transition: width .4s ease; }
+
+    /* Compteur */
+    .fiche-counter { font-family:'Syne',sans-serif; font-weight:700; color:var(--teal); font-size:1rem; white-space:nowrap; }
+
+    @media(max-width:520px){ .two-cols{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body class="page">
+<div class="fiches-wrap">
+
+  <div class="card animate-in">
+    <div class="eyebrow" style="margin-bottom:8px">🦶 PodoTest · Fiches podologiques</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <h1 style="font-size:1.6rem;margin:0">Formation vendeurs</h1>
+      <span class="fiche-counter" id="counter">1 / 11</span>
+    </div>
+    <p class="muted small" style="margin-bottom:16px">Parcourez les 11 fiches, puis passez le quiz !</p>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progress" style="width:9%"></div>
+    </div>
+
+    <!-- Points de navigation -->
+    <div class="fiche-nav">
+      <button class="btn btn-secondary" id="btnPrev" onclick="navigate(-1)" type="button" style="padding:10px 16px">←</button>
+      <div class="fiche-dots" id="dots"></div>
+      <button class="btn btn-primary" id="btnNext" onclick="navigate(1)" type="button" style="padding:10px 16px">→</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- FICHE 1 — Hallux Valgus -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="fiche-card active" id="fiche-0">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#fce7f3">👣</div>
+        <div>
+          <div class="fiche-num">Fiche 1 / 11</div>
+          <div class="fiche-title">Hallux Valgus</div>
+        </div>
+      </div>
+      <div class="fiche-def">Déformation de l'articulation du 1er orteil qui dévie vers l'extérieur. Il existe 3 stades (léger, modéré, sévère). Les personnes avec un pied égyptien sont plus exposées.</div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">⚠️ Causes</div>
+        <ul class="fiche-list danger">
+          <li>Chaussures étroites, rigides, avec coutures et œillets</li>
+          <li>Hérédité</li>
+          <li>Traumatisme ou facteurs neurologiques / inflammatoires</li>
+        </ul>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">👟 Conseil chaussage</div>
+        <div class="conseil-shoe"><span class="shoe-icon">👟</span><span>Chaussure à <strong>haute empeigne</strong>, en <strong>cuir souple</strong>, sans œillets ni coutures, avec un <strong>avant-pied large</strong>. Éviter absolument les talons hauts.</span></div>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">💊 Traitements</div>
+        <ul class="fiche-list info">
+          <li>Orthoplastie, attelle, tape</li>
+          <li>Exercices de renforcement</li>
+          <li>Chirurgie (traitement curatif)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FICHE 2 — Mycose -->
+    <div class="fiche-card" id="fiche-1">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#d1fae5">🦠</div>
+        <div>
+          <div class="fiche-num">Fiche 2 / 11</div>
+          <div class="fiche-title">Mycose & Hyperhidrose</div>
+        </div>
+      </div>
+      <div class="fiche-def">La mycose est l'infection microbienne la plus fréquente du pied, causée par des champignons microscopiques. L'hyperhidrose est une transpiration excessive.</div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">⚠️ Facteurs favorisants</div>
+        <ul class="fiche-list danger">
+          <li>Chaleur, humidité, transpiration excessive</li>
+          <li>Port de chaussures fermées en continu</li>
+          <li>Diabète, grossesse, antibiotiques</li>
+        </ul>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">✅ Conseils hygiène</div>
+        <ul class="fiche-list success">
+          <li>Bien sécher entre les orteils après la douche</li>
+          <li>Changer les chaussettes régulièrement, laver à 60 °C</li>
+          <li>Alterner les chaussures pour les laisser sécher</li>
+          <li>Privilégier des matières respirantes (cuir)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FICHE 3 — Épine calcanéenne -->
+    <div class="fiche-card" id="fiche-2">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#fef3c7">🦴</div>
+        <div>
+          <div class="fiche-num">Fiche 3 / 11</div>
+          <div class="fiche-title">Épine calcanéenne</div>
+        </div>
+      </div>
+      <div class="fiche-def">Excroissance osseuse sous le talon (calcanéus), visible à la radiographie. Douleur caractéristique au réveil et à la marche.</div>
+      <div class="two-cols">
+        <div class="fiche-section">
+          <div class="fiche-section-title">🔴 Facteurs internes</div>
+          <ul class="fiche-list danger">
+            <li>Obésité / grossesse</li>
+            <li>Pied creux ou pied plat</li>
+            <li>Centre de gravité postériorisé</li>
+          </ul>
+        </div>
+        <div class="fiche-section">
+          <div class="fiche-section-title">🟠 Facteurs externes</div>
+          <ul class="fiche-list gold">
+            <li>Mauvais chaussage</li>
+            <li>Sport avec impacts répétés</li>
+            <li>Piétinement prolongé</li>
+          </ul>
+        </div>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">👟 Conseil chaussage</div>
+        <div class="conseil-shoe"><span class="shoe-icon">👟</span><span>Semelle orthopédique avec <strong>amorti du talon</strong> et évidement pour décharger la zone douloureuse.</span></div>
+      </div>
+    </div>
+
+    <!-- FICHE 4 — Ongle incarné -->
+    <div class="fiche-card" id="fiche-3">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#fee2e2">💅</div>
+        <div>
+          <div class="fiche-num">Fiche 4 / 11</div>
+          <div class="fiche-title">Ongle incarné</div>
+        </div>
+      </div>
+      <div class="fiche-def">Fragment d'ongle qui pénètre dans la chair, provoquant douleur, inflammation et parfois du pus (stade 3 = botryomycome).</div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">⚠️ Causes principales</div>
+        <ul class="fiche-list danger">
+          <li>Ongles coupés trop courts ou en arrondi</li>
+          <li>Chaussures trop serrées</li>
+          <li>Hypercourbure de l'ongle, fragilité cutanée</li>
+        </ul>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">👟 Conseil chaussage</div>
+        <div class="conseil-shoe"><span class="shoe-icon">👟</span><span>Chaussure <strong>large</strong>, sans coutures, avec une <strong>empeigne haute</strong>. Éviter toute compression de l'orteil.</span></div>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">💊 Traitements</div>
+        <ul class="fiche-list info">
+          <li>Soins instrumentaux</li>
+          <li>Orthonyxie (redressement de l'ongle)</li>
+          <li>Onychoplastie</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FICHE 5 — Pied plat -->
+    <div class="fiche-card" id="fiche-4">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#dbeafe">🦶</div>
+        <div>
+          <div class="fiche-num">Fiche 5 / 11</div>
+          <div class="fiche-title">Pied plat</div>
+        </div>
+      </div>
+      <div class="fiche-def">Affaissement de l'arche interne du pied avec diminution de la concavité longitudinale. Souvent associé à du valgus (arrière-pied qui rentre). Plusieurs stades.</div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">🩺 Symptômes</div>
+        <ul class="fiche-list danger">
+          <li>Douleur face interne de la cheville + gonflement</li>
+          <li>Pronation excessive, genu valgum</li>
+          <li>Difficulté à se mettre sur la pointe des pieds</li>
+        </ul>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">👟 Conseil chaussage</div>
+        <div class="conseil-shoe"><span class="shoe-icon">👟</span><span>Chaussure <strong>rigide en cuir</strong> pour maintenir le pied et éviter d'accentuer l'affaissement. Éviter les chaussures souples en tissu.</span></div>
+      </div>
+    </div>
+
+    <!-- FICHE 6 — Pied creux -->
+    <div class="fiche-card" id="fiche-5">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#ede9fe">🦶</div>
+        <div>
+          <div class="fiche-num">Fiche 6 / 11</div>
+          <div class="fiche-title">Pied creux</div>
+        </div>
+      </div>
+      <div class="fiche-def">Augmentation de la concavité plantaire avec raccourcissement du pied. Souvent associé à du varus (arrière-pied qui sort). Plusieurs degrés.</div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">🩺 Symptômes</div>
+        <ul class="fiche-list danger">
+          <li>Entorses de chevilles à répétition</li>
+          <li>Griffes d'orteils, métatarsalgies</li>
+          <li>Kératose au talon et à l'avant-pied</li>
+          <li>Crampes aux mollets</li>
+        </ul>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">👟 Conseil chaussage</div>
+        <div class="conseil-shoe"><span class="shoe-icon">👟</span><span>Chaussure <strong>sans coutures</strong> avec un <strong>petit talon</strong> pour soulager la voûte plantaire.</span></div>
+      </div>
+    </div>
+
+    <!-- FICHE 7 — Griffes d'orteils -->
+    <div class="fiche-card" id="fiche-6">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#ffedd5">🤚</div>
+        <div>
+          <div class="fiche-num">Fiche 7 / 11</div>
+          <div class="fiche-title">Griffes d'orteils</div>
+        </div>
+      </div>
+      <div class="fiche-def">Déformation générale de l'orteil (griffe réductible ou fixée). Favorisée par l'avant-pied rond, le pied grec ou le pied creux.</div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">⚠️ Conséquences</div>
+        <ul class="fiche-list danger">
+          <li>Cors dorsaux par frottement sur l'empeigne</li>
+          <li>Risque d'infection</li>
+          <li>Réduction du périmètre de marche</li>
+        </ul>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">👟 Conseil chaussage</div>
+        <div class="conseil-shoe"><span class="shoe-icon">👟</span><span><strong>Empeigne haute</strong> pour éviter le frottement dorsal. <strong>Éviter les talons</strong> qui aggravent la déformation en reportant l'appui sur l'avant-pied.</span></div>
+      </div>
+    </div>
+
+    <!-- FICHE 8 — Varices & Œdèmes -->
+    <div class="fiche-card" id="fiche-7">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#fce7f3">🩸</div>
+        <div>
+          <div class="fiche-num">Fiche 8 / 11</div>
+          <div class="fiche-title">Varices & Œdèmes</div>
+        </div>
+      </div>
+      <div class="fiche-def">Les varices sont une insuffisance veineuse des membres inférieurs. L'œdème est une accumulation de liquide sous-cutané qui gonfle les jambes.</div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">⚠️ Facteurs communs</div>
+        <ul class="fiche-list danger">
+          <li>Sédentarité, surpoids, grossesse</li>
+          <li>Hérédité, exposition à la chaleur</li>
+        </ul>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">✅ Conseils vendeur</div>
+        <ul class="fiche-list success">
+          <li>Recommander des <strong>bas de compression</strong></li>
+          <li>Proposer des <strong>semelles pour le retour veineux</strong></li>
+          <li>Encourager l'activité physique</li>
+          <li>Éviter les chaussures trop serrées</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FICHE 9 — Genu valgum / varum -->
+    <div class="fiche-card" id="fiche-8">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#d1fae5">🦵</div>
+        <div>
+          <div class="fiche-num">Fiche 9 / 11</div>
+          <div class="fiche-title">Genu valgum / varum</div>
+        </div>
+      </div>
+      <div class="fiche-def">Le <strong>genu valgum</strong> = genoux en X (chevilles écartées). Le <strong>genu varum</strong> = jambes arquées (genoux écartés).</div>
+      <div class="two-cols">
+        <div class="fiche-section">
+          <div class="fiche-section-title">🔵 Genu valgum</div>
+          <ul class="fiche-list info">
+            <li>Pied valgus → rotation interne du genou</li>
+            <li>Semelles <strong>supinateurs</strong></li>
+          </ul>
+        </div>
+        <div class="fiche-section">
+          <div class="fiche-section-title">🟡 Genu varum</div>
+          <ul class="fiche-list gold">
+            <li>Pied varus → rotation externe du genou</li>
+            <li>Semelles <strong>pronateurs</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FICHE 10 — Cors & Durillons -->
+    <div class="fiche-card" id="fiche-9">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#fef3c7">🟡</div>
+        <div>
+          <div class="fiche-num">Fiche 10 / 11</div>
+          <div class="fiche-title">Cors & Durillons</div>
+        </div>
+      </div>
+      <div class="fiche-def">Un cor est un épaississement localisé de la peau (jaunâtre) avec un noyau de kératose central douloureux. Le durillon est similaire mais moins algique.</div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">📋 4 phases de formation</div>
+        <ul class="fiche-list gold">
+          <li><strong>Phase 1 :</strong> Formation de kératose sur zone de frottement</li>
+          <li><strong>Phase 2 :</strong> Formation d'une bourse (le patient commence à sentir)</li>
+          <li><strong>Phase 3 :</strong> Période douloureuse</li>
+          <li><strong>Phase 4 :</strong> Inflammation, ulcère possible</li>
+        </ul>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">👟 Conseil vendeur</div>
+        <div class="conseil-shoe"><span class="shoe-icon">👟</span><span>Identifier les zones de frottement et adapter la chaussure pour <strong>éliminer les points de pression</strong>. Orienter vers un podologue.</span></div>
+      </div>
+    </div>
+
+    <!-- FICHE 11 — Verrues -->
+    <div class="fiche-card" id="fiche-10">
+      <div class="fiche-header">
+        <div class="fiche-icon" style="background:#f3f4f6">🦠</div>
+        <div>
+          <div class="fiche-num">Fiche 11 / 11</div>
+          <div class="fiche-title">Verrues plantaires</div>
+        </div>
+      </div>
+      <div class="fiche-def">Tumeur cutanée bénigne d'origine virale (papillomavirus). Se développe sur peau humide et macérée. Deux formes : verrue myrméciée et verrue mosaïque.</div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">⚠️ Lieux à risque</div>
+        <ul class="fiche-list danger">
+          <li>Piscines et vestiaires communs</li>
+          <li>Salles de fitness</li>
+        </ul>
+      </div>
+      <div class="fiche-section">
+        <div class="fiche-section-title">💊 Traitements</div>
+        <ul class="fiche-list info">
+          <li>Kératolytiques</li>
+          <li>Cryothérapie</li>
+          <li>Homéopathie / Phytothérapie</li>
+        </ul>
+      </div>
+
+      <!-- Bouton final vers le quiz -->
+      <div style="margin-top:24px;padding:20px;background:linear-gradient(135deg,var(--teal-lt),var(--blue-lt));border-radius:14px;border:1px solid rgba(13,148,136,.2);text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:8px">🎓</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;margin-bottom:6px">Vous avez parcouru toutes les fiches !</div>
+        <p class="muted small" style="margin-bottom:14px">Vous pouvez maintenant passer le quiz.</p>
+        <form method="post" action="/start">
+          <button type="submit" class="btn btn-primary" style="padding:13px 32px;font-size:1rem">
+            🚀 Passer le quiz
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- fin .card -->
+</div><!-- fin .fiches-wrap -->
+
+<script>
+  const TOTAL = 11;
+  let current = 0;
+  const visited = new Set([0]);
+
+  // Créer les points
+  const dotsEl = document.getElementById('dots');
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'fiche-dot' + (i === 0 ? ' active' : '');
+    d.title = `Fiche ${i+1}`;
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= TOTAL) return;
+    document.getElementById('fiche-' + current).classList.remove('active');
+    current = idx;
+    visited.add(idx);
+    document.getElementById('fiche-' + current).classList.add('active');
+    updateUI();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  function navigate(dir) { goTo(current + dir); }
+
+  function updateUI() {
+    // Progression
+    const pct = Math.round(((current + 1) / TOTAL) * 100);
+    document.getElementById('progress').style.width = pct + '%';
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + TOTAL;
+
+    // Points
+    dotsEl.querySelectorAll('.fiche-dot').forEach((d, i) => {
+      d.className = 'fiche-dot';
+      if (i === current)      d.classList.add('active');
+      else if (visited.has(i)) d.classList.add('visited');
+    });
+
+    // Boutons
+    document.getElementById('btnPrev').disabled = (current === 0);
+    document.getElementById('btnNext').disabled = (current === TOTAL - 1);
+  }
+
+  updateUI();
+</script>
+</body></html>
