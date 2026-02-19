@@ -6,7 +6,7 @@ import json
 import secrets
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, Request, Depends, Cookie
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -21,9 +21,8 @@ app = FastAPI(title="Podologie • Formation vendeurs")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# ── Mot de passe admin ─────────────────────────────────────────────────────────
+# ── Mot de passe admin ────────────────────────────────────────────────────────
 ADMIN_PASSWORD = "admin"
-# Sessions admin actives (en mémoire — suffisant pour cet usage)
 _admin_sessions: set[str] = set()
 
 
@@ -37,6 +36,13 @@ def is_admin(request: Request) -> bool:
 @app.on_event("startup")
 def _startup() -> None:
     Base.metadata.create_all(bind=engine)
+    # S'assurer que les questions existent dès le démarrage
+    from db import SessionLocal
+    db = SessionLocal()
+    try:
+        seed.ensure_questions(db)
+    finally:
+        db.close()
 
 
 # ── Landing ───────────────────────────────────────────────────────────────────
@@ -49,41 +55,46 @@ def landing(request: Request):
     )
 
 
-@app.get("/init")
-def init(db: OrmSession = Depends(get_db)):
-    token = seed.upsert_seed(db=db)
-    return RedirectResponse(url=f"/t/{token}/profil", status_code=302)
+# ── Page profil : affichage direct, sans créer de session ────────────────────
+
+@app.get("/quiz", response_class=HTMLResponse)
+def quiz_start(request: Request):
+    """Affiche le formulaire profil sans créer de session."""
+    return templates.TemplateResponse("profil.html", {"request": request, "token": ""})
 
 
 @app.post("/start")
-def start(db: OrmSession = Depends(get_db)):
-    token = seed.upsert_seed(db=db)
-    return RedirectResponse(url=f"/t/{token}/profil", status_code=302)
+def start(request: Request):
+    """Bouton 'Faire le quiz' → formulaire profil."""
+    return RedirectResponse(url="/quiz", status_code=302)
 
 
-# ── Profil candidat ───────────────────────────────────────────────────────────
+# ── Soumission du profil : crée la session ici ───────────────────────────────
 
-@app.get("/t/{token}/profil", response_class=HTMLResponse)
-def profil_form(token: str, request: Request, db: OrmSession = Depends(get_db)):
-    sess = db.query(models.Session).filter(models.Session.token == token).first()
-    if not sess:
-        return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
-    return templates.TemplateResponse("profil.html", {"request": request, "token": token})
-
-
-@app.post("/t/{token}/profil", response_class=HTMLResponse)
-async def profil_save(token: str, request: Request, db: OrmSession = Depends(get_db)):
-    sess = db.query(models.Session).filter(models.Session.token == token).first()
-    if not sess:
-        return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
-
+@app.post("/quiz", response_class=HTMLResponse)
+async def profil_save(request: Request, db: OrmSession = Depends(get_db)):
+    """Reçoit le profil, crée la session ET tire les questions, redirige vers le quiz."""
     form = await request.form()
+
+    # Vérifier consentement
+    if not form.get("consent"):
+        return templates.TemplateResponse("profil.html", {
+            "request": request,
+            "token": "",
+            "error": "Vous devez accepter le consentement pour continuer."
+        })
+
+    # Créer la session avec tirage aléatoire
+    token = seed.upsert_seed(db=db)
+
+    # Récupérer la session fraîchement créée et y enregistrer le profil
+    sess = db.query(models.Session).filter(models.Session.token == token).first()
     sess.prenom     = form.get("prenom", "").strip()
     sess.nom        = form.get("nom", "").strip()
     sess.role       = form.get("role", "").strip()
     sess.experience = form.get("experience", "").strip()
     sess.shop_type  = form.get("shop_type", "").strip()
-    sess.consent    = bool(form.get("consent"))
+    sess.consent    = True
     db.commit()
 
     return RedirectResponse(url=f"/t/{token}", status_code=302)
@@ -95,30 +106,33 @@ async def profil_save(token: str, request: Request, db: OrmSession = Depends(get
 def take_quiz(token: str, request: Request, db: OrmSession = Depends(get_db)):
     sess = db.query(models.Session).filter(models.Session.token == token).first()
     if not sess:
-        return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
+        return templates.TemplateResponse("done.html", {
+            "request": request,
+            "message": "Lien invalide ou expiré. Veuillez recommencer depuis l'accueil."
+        }, status_code=404)
 
     if not sess.prenom:
-        return RedirectResponse(url=f"/t/{token}/profil", status_code=302)
+        return RedirectResponse(url="/quiz", status_code=302)
 
     quiz = db.query(models.Quiz).filter(models.Quiz.id == sess.quiz_id).first()
     if not quiz:
-        return templates.TemplateResponse("done.html", {"request": request, "message": "Quiz introuvable."}, status_code=404)
+        return templates.TemplateResponse("done.html", {
+            "request": request, "message": "Quiz introuvable."
+        }, status_code=404)
 
-    # Récupérer les questions tirées aléatoirement pour cette session
+    # Questions mémorisées dans la session
     try:
         chosen_ids = json.loads(sess.question_ids_json or "[]")
     except Exception:
         chosen_ids = []
 
     if chosen_ids:
-        # Récupérer dans l'ordre du tirage
         questions_map = {
             q.id: q for q in
             db.query(models.Question).filter(models.Question.id.in_(chosen_ids)).all()
         }
         questions = [questions_map[qid] for qid in chosen_ids if qid in questions_map]
     else:
-        # Fallback : toutes les questions dans l'ordre
         questions = (
             db.query(models.Question)
             .filter(models.Question.quiz_id == quiz.id)
@@ -132,7 +146,10 @@ def take_quiz(token: str, request: Request, db: OrmSession = Depends(get_db)):
             choices = json.loads(q.choices_json or "[]")
         except Exception:
             choices = []
-        q_payload.append({"id": q.id, "kind": q.kind, "topic": q.topic, "text": q.text, "choices": choices})
+        q_payload.append({
+            "id": q.id, "kind": q.kind,
+            "topic": q.topic, "text": q.text, "choices": choices
+        })
 
     return templates.TemplateResponse(
         "quiz.html",
@@ -145,11 +162,13 @@ def take_quiz(token: str, request: Request, db: OrmSession = Depends(get_db)):
 async def submit_quiz(token: str, request: Request, db: OrmSession = Depends(get_db)):
     sess = db.query(models.Session).filter(models.Session.token == token).first()
     if not sess:
-        return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
+        return templates.TemplateResponse("done.html", {
+            "request": request,
+            "message": "Lien invalide ou expiré. Veuillez recommencer depuis l'accueil."
+        }, status_code=404)
 
     form = await request.form()
 
-    # Récupérer exactement les mêmes questions que celles présentées
     try:
         chosen_ids = json.loads(sess.question_ids_json or "[]")
     except Exception:
@@ -189,7 +208,8 @@ async def submit_quiz(token: str, request: Request, db: OrmSession = Depends(get
 
         existing = (
             db.query(models.Answer)
-            .filter(models.Answer.session_id == sess.id, models.Answer.question_id == q.id)
+            .filter(models.Answer.session_id == sess.id,
+                    models.Answer.question_id == q.id)
             .first()
         )
         if existing:
@@ -231,7 +251,8 @@ async def admin_login(request: Request):
         token = secrets.token_urlsafe(32)
         _admin_sessions.add(token)
         response = RedirectResponse(url="/admin", status_code=302)
-        response.set_cookie("admin_token", token, httponly=True, samesite="lax", max_age=3600 * 8)
+        response.set_cookie("admin_token", token, httponly=True,
+                            samesite="lax", max_age=3600 * 8)
         return response
 
     return templates.TemplateResponse("login.html", {
@@ -269,7 +290,9 @@ def admin(request: Request, db: OrmSession = Depends(get_db)):
             "score_pct": round(correct / total_q * 100) if total_q else 0,
         })
 
-    return templates.TemplateResponse("admin.html", {"request": request, "sessions_data": sessions_data})
+    return templates.TemplateResponse("admin.html", {
+        "request": request, "sessions_data": sessions_data
+    })
 
 
 @app.get("/admin/export.csv")
@@ -279,7 +302,8 @@ def export_csv(request: Request, db: OrmSession = Depends(get_db)):
 
     out = io.StringIO()
     w = csv.writer(out)
-    w.writerow(["date", "token", "prenom", "nom", "role", "experience", "type_magasin", "score", "total", "score_pct"])
+    w.writerow(["date", "token", "prenom", "nom", "role", "experience",
+                "type_magasin", "score", "total", "score_pct"])
 
     sessions = db.query(models.Session).order_by(models.Session.id.desc()).all()
     for s in sessions:
@@ -287,7 +311,8 @@ def export_csv(request: Request, db: OrmSession = Depends(get_db)):
         total_q = db.query(models.Question).filter(models.Question.quiz_id == s.quiz_id).count()
         correct = sum(1 for a in answers if a.is_correct)
         pct = round(correct / total_q * 100) if total_q else 0
-        w.writerow([s.created_at, s.token, s.prenom, s.nom, s.role, s.experience, s.shop_type, correct, total_q, pct])
+        w.writerow([s.created_at, s.token, s.prenom, s.nom, s.role,
+                    s.experience, s.shop_type, correct, total_q, pct])
 
     out.seek(0)
     return StreamingResponse(

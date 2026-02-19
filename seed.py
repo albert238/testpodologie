@@ -11,6 +11,25 @@ from models import Quiz, Question, Session
 NB_QUESTIONS = 5
 
 
+def ensure_questions(db: OrmSession) -> None:
+    """Appelé au startup : s'assure que le quiz et les 11 questions existent."""
+    quiz = db.query(Quiz).filter(Quiz.slug == "demo").first()
+    if quiz is None:
+        quiz = Quiz(
+            title="PodoTest • Formation vendeurs",
+            slug="demo",
+            author="Clara Vialle",
+            is_active=True,
+        )
+        db.add(quiz)
+        db.commit()
+        db.refresh(quiz)
+
+    existing = db.query(Question).filter(Question.quiz_id == quiz.id).count()
+    if existing == 0:
+        _insert_questions(db, quiz.id)
+
+
 def upsert_seed(db: OrmSession) -> str:
     """
     Crée le quiz + 11 questions si besoin.
