@@ -86,7 +86,7 @@ h3 {
   font-family: 'Syne', sans-serif;
   font-weight: 600;
   font-size: 1.1rem;
-  line-height: 1.4;
+  line-height: 1.6;
 }
 
 .lead {
@@ -366,7 +366,7 @@ select:focus {
   font-family: 'Syne', sans-serif;
   font-size: 1.15rem;
   font-weight: 600;
-  line-height: 1.45;
+  line-height: 1.65;
   color: var(--text);
   margin-bottom: 20px;
 }
