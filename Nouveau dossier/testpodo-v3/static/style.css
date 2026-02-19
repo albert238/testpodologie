@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@300;400;500;600&display=swap');
 
 /* ── Variables ─────────────────────────────────────────── */
 :root {
@@ -31,7 +31,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
   color: var(--text);
   background: var(--bg);
   min-height: 100vh;
@@ -64,7 +64,7 @@ body {
 
 /* ── Typography ────────────────────────────────────────── */
 h1 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: clamp(2.4rem, 6vw, 3.8rem);
   letter-spacing: -0.03em;
@@ -76,14 +76,14 @@ h1 {
 }
 
 h2 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 700;
   font-size: 1.5rem;
   letter-spacing: -0.02em;
 }
 
 h3 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 600;
   font-size: 1.1rem;
   line-height: 1.6;
@@ -138,7 +138,7 @@ h3 {
   padding: 12px 22px;
   border-radius: 12px;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
   font-size: .95rem;
   font-weight: 600;
   text-decoration: none;
@@ -280,7 +280,7 @@ select {
   border: 1.5px solid var(--border);
   border-radius: 11px;
   font-size: .95rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
   outline: none;
   transition: border-color .15s, box-shadow .15s;
   background: #fff;
@@ -363,7 +363,7 @@ select:focus {
 .q-num  { font-size: .8rem; font-weight: 600; color: var(--text2); }
 
 .q-text {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 1.15rem;
   font-weight: 600;
   line-height: 1.65;
@@ -443,7 +443,7 @@ select:focus {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-family: 'Syne', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: 1.6rem;
   color: var(--teal);
@@ -491,7 +491,7 @@ select:focus {
   transition: transform .15s;
 }
 .stat-card:hover { transform: translateY(-2px); }
-.stat-num  { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800; }
+.stat-num  { font-family: 'Nunito', sans-serif; font-size: 2.2rem; font-weight: 800; }
 .stat-lbl  { font-size: .78rem; color: var(--text2); margin-top: 2px; }
 .stat-teal  .stat-num { color: var(--teal); }
 .stat-blue  .stat-num { color: var(--blue); }
