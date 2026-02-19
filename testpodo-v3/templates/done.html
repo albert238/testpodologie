@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr"><head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/static/style.css">
+  <title>Résultat – PodoTest</title>
+</head>
+<body class="page">
+  <div class="done-wrap">
+    <div class="card animate-in" style="text-align:center;padding:36px 28px">
+
+    {% if correct is defined %}
+      {% set pct = (correct / total * 100) | int %}
+
+      <div class="eyebrow" style="justify-content:center;margin-bottom:10px">
+        🦶 PodoTest · Résultat
+      </div>
+
+      <h1 style="font-size:2rem;margin-bottom:4px">
+        {% if pct >= 80 %}Excellent travail !
+        {% elif pct >= 60 %}Bien joué !
+        {% else %}À approfondir
+        {% endif %}
+      </h1>
+      <p class="muted" style="margin-bottom:0">{{ prenom }}, voici votre score :</p>
+
+      <!-- Anneau SVG -->
+      <div class="score-ring-wrap">
+        {% set radius = 54 %}
+        {% set circ = 339 %}
+        {% set dash = (pct / 100 * circ) | int %}
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r="{{ radius }}" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+          <circle cx="65" cy="65" r="{{ radius }}" fill="none"
+            stroke="{% if pct >= 80 %}#059669{% elif pct >= 60 %}#2563eb{% else %}#f59e0b{% endif %}"
+            stroke-width="10" stroke-linecap="round"
+            stroke-dasharray="{{ dash }} {{ circ }}"
+            style="transition:stroke-dasharray .8s ease"/>
+        </svg>
+        <div class="score-num">
+          {{ correct }}/{{ total }}
+          <small>{{ pct }}%</small>
+        </div>
+      </div>
+
+      {% if pct >= 80 %}
+        <div class="mention-badge mention-excellent">🏆 Excellent – {{ pct }}%</div>
+      {% elif pct >= 60 %}
+        <div class="mention-badge mention-bien">👍 Bien – {{ pct }}%</div>
+      {% else %}
+        <div class="mention-badge mention-moyen">📚 À approfondir – {{ pct }}%</div>
+      {% endif %}
+
+      <p class="muted small" style="margin-bottom:24px">
+        Vos réponses ont été enregistrées. Merci pour votre participation !
+      </p>
+
+    {% else %}
+      <div style="font-size:3rem;margin-bottom:12px">✅</div>
+      <h2>{{ message }}</h2>
+      <p class="muted" style="margin:12px 0 24px">Vous pouvez fermer cette page.</p>
+    {% endif %}
+
+      <a class="btn btn-secondary" href="/">← Retour à l'accueil</a>
+    </div>
+  </div>
+</body></html>
