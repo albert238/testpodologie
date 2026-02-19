@@ -38,6 +38,8 @@ class Session(Base):
     role: Mapped[str] = mapped_column(String, default="")
     experience: Mapped[str] = mapped_column(String, default="")
     shop_type: Mapped[str] = mapped_column(String, default="")
+    # IDs des questions tirées aléatoirement pour cette session (JSON)
+    question_ids_json: Mapped[str] = mapped_column(Text, default="[]")
 
     answers: Mapped[list["Answer"]] = relationship(cascade="all, delete-orphan")
 

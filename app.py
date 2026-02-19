@@ -6,7 +6,7 @@ import json
 import secrets
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, Cookie
 from fastapi.responses import RedirectResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -21,11 +21,25 @@ app = FastAPI(title="Podologie • Formation vendeurs")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# ── Mot de passe admin ─────────────────────────────────────────────────────────
+ADMIN_PASSWORD = "admin"
+# Sessions admin actives (en mémoire — suffisant pour cet usage)
+_admin_sessions: set[str] = set()
+
+
+def is_admin(request: Request) -> bool:
+    token = request.cookies.get("admin_token", "")
+    return token in _admin_sessions
+
+
+# ── Startup ───────────────────────────────────────────────────────────────────
 
 @app.on_event("startup")
 def _startup() -> None:
     Base.metadata.create_all(bind=engine)
 
+
+# ── Landing ───────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 def landing(request: Request):
@@ -47,7 +61,7 @@ def start(db: OrmSession = Depends(get_db)):
     return RedirectResponse(url=f"/t/{token}/profil", status_code=302)
 
 
-# ── Page profil candidat ──────────────────────────────────────────────────────
+# ── Profil candidat ───────────────────────────────────────────────────────────
 
 @app.get("/t/{token}/profil", response_class=HTMLResponse)
 def profil_form(token: str, request: Request, db: OrmSession = Depends(get_db)):
@@ -64,12 +78,12 @@ async def profil_save(token: str, request: Request, db: OrmSession = Depends(get
         return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
 
     form = await request.form()
-    sess.prenom      = form.get("prenom", "").strip()
-    sess.nom         = form.get("nom", "").strip()
-    sess.role        = form.get("role", "").strip()
-    sess.experience  = form.get("experience", "").strip()
-    sess.shop_type   = form.get("shop_type", "").strip()
-    sess.consent     = bool(form.get("consent"))
+    sess.prenom     = form.get("prenoom", "").strip()
+    sess.nom        = form.get("nom", "").strip()
+    sess.role       = form.get("role", "").strip()
+    sess.experience = form.get("experience", "").strip()
+    sess.shop_type  = form.get("shop_type", "").strip()
+    sess.consent    = bool(form.get("consent"))
     db.commit()
 
     return RedirectResponse(url=f"/t/{token}", status_code=302)
@@ -83,7 +97,6 @@ def take_quiz(token: str, request: Request, db: OrmSession = Depends(get_db)):
     if not sess:
         return templates.TemplateResponse("done.html", {"request": request, "message": "Lien invalide."}, status_code=404)
 
-    # Rediriger vers profil si pas encore rempli
     if not sess.prenom:
         return RedirectResponse(url=f"/t/{token}/profil", status_code=302)
 
@@ -91,12 +104,27 @@ def take_quiz(token: str, request: Request, db: OrmSession = Depends(get_db)):
     if not quiz:
         return templates.TemplateResponse("done.html", {"request": request, "message": "Quiz introuvable."}, status_code=404)
 
-    questions = (
-        db.query(models.Question)
-        .filter(models.Question.quiz_id == quiz.id)
-        .order_by(models.Question.id.asc())
-        .all()
-    )
+    # Récupérer les questions tirées aléatoirement pour cette session
+    try:
+        chosen_ids = json.loads(sess.question_ids_json or "[]")
+    except Exception:
+        chosen_ids = []
+
+    if chosen_ids:
+        # Récupérer dans l'ordre du tirage
+        questions_map = {
+            q.id: q for q in
+            db.query(models.Question).filter(models.Question.id.in_(chosen_ids)).all()
+        }
+        questions = [questions_map[qid] for qid in chosen_ids if qid in questions_map]
+    else:
+        # Fallback : toutes les questions dans l'ordre
+        questions = (
+            db.query(models.Question)
+            .filter(models.Question.quiz_id == quiz.id)
+            .order_by(models.Question.id.asc())
+            .all()
+        )
 
     q_payload: List[Dict[str, Any]] = []
     for q in questions:
@@ -121,12 +149,25 @@ async def submit_quiz(token: str, request: Request, db: OrmSession = Depends(get
 
     form = await request.form()
 
-    questions = (
-        db.query(models.Question)
-        .filter(models.Question.quiz_id == sess.quiz_id)
-        .order_by(models.Question.id.asc())
-        .all()
-    )
+    # Récupérer exactement les mêmes questions que celles présentées
+    try:
+        chosen_ids = json.loads(sess.question_ids_json or "[]")
+    except Exception:
+        chosen_ids = []
+
+    if chosen_ids:
+        questions_map = {
+            q.id: q for q in
+            db.query(models.Question).filter(models.Question.id.in_(chosen_ids)).all()
+        }
+        questions = [questions_map[qid] for qid in chosen_ids if qid in questions_map]
+    else:
+        questions = (
+            db.query(models.Question)
+            .filter(models.Question.quiz_id == sess.quiz_id)
+            .order_by(models.Question.id.asc())
+            .all()
+        )
 
     correct_count = 0
     for q in questions:
@@ -163,23 +204,59 @@ async def submit_quiz(token: str, request: Request, db: OrmSession = Depends(get
             ))
 
     db.commit()
-    total = len(questions)
     return templates.TemplateResponse("done.html", {
         "request": request,
-        "message": f"Merci {sess.prenom} ! Réponses enregistrées ✅",
+        "message": f"Merci {sess.prenom} !",
         "correct": correct_count,
-        "total": total,
+        "total": len(questions),
         "prenom": sess.prenom,
     })
 
 
-# ── Admin ─────────────────────────────────────────────────────────────────────
+# ── Admin — Login ─────────────────────────────────────────────────────────────
+
+@app.get("/admin/login", response_class=HTMLResponse)
+def admin_login_form(request: Request):
+    if is_admin(request):
+        return RedirectResponse(url="/admin", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+
+@app.post("/admin/login", response_class=HTMLResponse)
+async def admin_login(request: Request):
+    form = await request.form()
+    password = form.get("password", "")
+
+    if password == ADMIN_PASSWORD:
+        token = secrets.token_urlsafe(32)
+        _admin_sessions.add(token)
+        response = RedirectResponse(url="/admin", status_code=302)
+        response.set_cookie("admin_token", token, httponly=True, samesite="lax", max_age=3600 * 8)
+        return response
+
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "error": "Mot de passe incorrect."
+    })
+
+
+@app.get("/admin/logout")
+def admin_logout(request: Request):
+    token = request.cookies.get("admin_token", "")
+    _admin_sessions.discard(token)
+    response = RedirectResponse(url="/", status_code=302)
+    response.delete_cookie("admin_token")
+    return response
+
+
+# ── Admin — Dashboard ─────────────────────────────────────────────────────────
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin(request: Request, db: OrmSession = Depends(get_db)):
-    sessions = db.query(models.Session).order_by(models.Session.id.desc()).limit(200).all()
+    if not is_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=302)
 
-    # Pour chaque session, calculer le score
+    sessions = db.query(models.Session).order_by(models.Session.id.desc()).limit(200).all()
     sessions_data = []
     for s in sessions:
         answers = db.query(models.Answer).filter(models.Answer.session_id == s.id).all()
@@ -196,7 +273,10 @@ def admin(request: Request, db: OrmSession = Depends(get_db)):
 
 
 @app.get("/admin/export.csv")
-def export_csv(db: OrmSession = Depends(get_db)):
+def export_csv(request: Request, db: OrmSession = Depends(get_db)):
+    if not is_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=302)
+
     out = io.StringIO()
     w = csv.writer(out)
     w.writerow(["date", "token", "prenom", "nom", "role", "experience", "type_magasin", "score", "total", "score_pct"])

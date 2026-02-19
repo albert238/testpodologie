@@ -2,106 +2,103 @@
 <html lang="fr"><head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
   <title>Admin – PodoTest</title>
-  <style>
-    .admin-wrap { max-width:1100px; margin:0 auto; padding:24px 16px; }
-    h1 { font-size:1.8rem; margin-bottom:4px; }
-    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:20px 0; }
-    .stat-card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; text-align:center; }
-    .stat-num { font-size:2rem; font-weight:800; color:#4f8ef7; }
-    .stat-lbl { font-size:.8rem; color:#6b7280; margin-top:2px; }
-    table { width:100%; border-collapse:collapse; font-size:.88rem; }
-    th { text-align:left; padding:10px 12px; background:#f9fafb; color:#6b7280; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; border-bottom:2px solid #e5e7eb; }
-    td { padding:10px 12px; border-bottom:1px solid #f3f4f6; }
-    tr:hover td { background:#f9fafb; }
-    .badge-score { display:inline-block; padding:3px 10px; border-radius:20px; font-weight:700; font-size:.82rem; }
-    .score-high { background:#d1fae5; color:#065f46; }
-    .score-mid  { background:#dbeafe; color:#1e40af; }
-    .score-low  { background:#fef3c7; color:#92400e; }
-    .empty-state { text-align:center; padding:40px; color:#9ca3af; }
-    .topbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
-  </style>
 </head>
 <body class="page">
   <div class="admin-wrap">
 
-    <div class="topbar">
+    <div class="admin-header animate-in">
       <div>
-        <h1>Administration</h1>
-        <p class="muted small">PodoTest — Résultats des candidats</p>
+        <div class="eyebrow">🔐 Administration</div>
+        <h1 style="font-size:2rem;margin:6px 0 4px">Tableau de bord</h1>
+        <p class="muted small">PodoTest · Résultats des candidats</p>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <a class="btn" href="/admin/export.csv">⬇ Exporter CSV</a>
-        <a class="btn secondary" href="/">← Accueil</a>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <a class="btn btn-primary" href="/admin/export.csv">⬇ Exporter CSV</a>
+        <a class="btn btn-secondary" href="/admin/logout">Déconnexion</a>
+        <a class="btn btn-secondary" href="/">← Accueil</a>
       </div>
     </div>
 
-    <!-- Statistiques globales -->
     {% if sessions_data %}
-      {% set nb = sessions_data|length %}
-      {% set completed = sessions_data|selectattr('session.prenom')|list|length %}
-      {% set scores = sessions_data|map(attribute='score_pct')|list %}
-      {% set avg = (scores|sum / nb)|round|int if nb > 0 else 0 %}
-      {% set perfect = sessions_data|selectattr('correct')|selectattr('total')|list %}
+      {% set nb = sessions_data | length %}
+      {% set scores_list = sessions_data | map(attribute='score_pct') | list %}
+      {% set avg = (scores_list | sum / nb) | round | int if nb > 0 else 0 %}
+      {% set high = sessions_data | selectattr('score_pct','ge',80) | list | length %}
 
-      <div class="stats-grid">
-        <div class="stat-card">
+      <div class="stats-grid animate-in" style="animation-delay:.08s">
+        <div class="stat-card stat-teal">
           <div class="stat-num">{{ nb }}</div>
           <div class="stat-lbl">Sessions totales</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-num">{{ completed }}</div>
+        <div class="stat-card stat-blue">
+          <div class="stat-num">{{ sessions_data | selectattr('session.prenom') | list | length }}</div>
           <div class="stat-lbl">Profils remplis</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card stat-coral">
           <div class="stat-num">{{ avg }}%</div>
           <div class="stat-lbl">Score moyen</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-num">{{ sessions_data|selectattr('score_pct', 'ge', 80)|list|length }}</div>
+        <div class="stat-card stat-green">
+          <div class="stat-num">{{ high }}</div>
           <div class="stat-lbl">Score ≥ 80%</div>
         </div>
       </div>
     {% endif %}
 
-    <div class="card" style="padding:0;overflow:hidden">
+    <div class="table-card animate-in" style="animation-delay:.12s">
       {% if sessions_data %}
       <table>
         <thead>
           <tr>
             <th>Date</th>
-            <th>Prénom / Nom</th>
+            <th>Candidat</th>
             <th>Rôle</th>
             <th>Expérience</th>
-            <th>Type de magasin</th>
+            <th>Magasin</th>
             <th>Score</th>
-            <th>%</th>
+            <th>Résultat</th>
           </tr>
         </thead>
         <tbody>
           {% for row in sessions_data %}
           {% set s = row.session %}
           <tr>
-            <td>{{ s.created_at.strftime('%d/%m/%Y %H:%M') if s.created_at else '—' }}</td>
-            <td>
+            <td style="white-space:nowrap;color:var(--text2);font-size:.82rem">
+              {{ s.created_at.strftime('%d/%m/%Y') if s.created_at else '—' }}<br>
+              <span style="font-size:.75rem">{{ s.created_at.strftime('%H:%M') if s.created_at else '' }}</span>
+            </td>
+            <td class="candidate-name">
               {% if s.prenom or s.nom %}
                 <strong>{{ s.prenom }} {{ s.nom }}</strong>
               {% else %}
-                <span style="color:#9ca3af">Non renseigné</span>
+                <span style="color:#9ca3af;font-style:italic">Non renseigné</span>
               {% endif %}
             </td>
-            <td>{{ s.role | replace('_', ' ') | title if s.role else '—' }}</td>
-            <td>{{ s.experience | replace('_', ' ') if s.experience else '—' }}</td>
-            <td>{{ s.shop_type | replace('_', ' ') | title if s.shop_type else '—' }}</td>
-            <td>{{ row.correct }} / {{ row.total }}</td>
+            <td>
+              {% if s.role %}
+                <span class="tag tag-teal">{{ s.role | replace('_',' ') | title }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td style="font-size:.85rem;color:var(--text2)">
+              {{ s.experience | replace('_',' ') if s.experience else '—' }}
+            </td>
+            <td style="font-size:.85rem;color:var(--text2)">
+              {{ s.shop_type | replace('_',' ') | title if s.shop_type else '—' }}
+            </td>
+            <td style="font-weight:600;font-family:'Syne',sans-serif">
+              {{ row.correct }} / {{ row.total }}
+            </td>
             <td>
               {% if row.score_pct >= 80 %}
-                <span class="badge-score score-high">{{ row.score_pct }}%</span>
+                <span class="score-pill score-high">🏆 {{ row.score_pct }}%</span>
               {% elif row.score_pct >= 60 %}
-                <span class="badge-score score-mid">{{ row.score_pct }}%</span>
+                <span class="score-pill score-mid">👍 {{ row.score_pct }}%</span>
               {% else %}
-                <span class="badge-score score-low">{{ row.score_pct }}%</span>
+                <span class="score-pill score-low">📚 {{ row.score_pct }}%</span>
               {% endif %}
             </td>
           </tr>
@@ -110,9 +107,10 @@
       </table>
       {% else %}
         <div class="empty-state">
-          <p style="font-size:2rem">📋</p>
-          <p>Aucune session enregistrée pour l'instant.</p>
-          <a class="btn" href="/">Lancer un quiz</a>
+          <p style="font-size:2.5rem">📋</p>
+          <p style="font-weight:600;margin:8px 0 4px">Aucune session enregistrée</p>
+          <p class="muted small">Les résultats apparaîtront ici après le premier quiz.</p>
+          <a class="btn btn-primary" href="/" style="margin-top:16px">Lancer un quiz</a>
         </div>
       {% endif %}
     </div>

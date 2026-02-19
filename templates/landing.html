@@ -2,31 +2,89 @@
 <html lang="fr"><head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
-  <title>PodoTest</title>
+  <title>PodoTest – Formation vendeurs</title>
 </head>
 <body class="page">
   <div class="wrap">
 
-    <header class="hero card">
+    <header class="hero card animate-in">
       <div class="hero-left">
-        <div class="badge">Podologie • Formation vendeurs</div>
-        <div class="muted small">{{ byline }}</div>
+
+        <div class="author-pill">
+          <div class="author-avatar">CV</div>
+          Mémoire de fin d'études · Clara Vialle
+        </div>
+
+        <div class="eyebrow">🦶 Podologie · Formation vendeurs</div>
+
         <h1>PodoTest</h1>
-        <p class="lead">Questionnaire mobile rapide (5–7 minutes).</p>
 
-        <form method="post" action="/start" class="cta">
-          <button class="btn">Faire le quiz</button>
-          <a class="btn secondary" href="/admin">Admin</a>
-        </form>
+        <p class="lead">
+          Questionnaire interactif sur la prévention podologique<br>
+          en magasin de chaussures. <strong>5 questions · 5 à 7 min.</strong>
+        </p>
 
-        <p class="muted small">Astuce: <code>/init</code> démarre aussi un quiz.</p>
+        <div class="info-strip">
+          <div class="info-item">
+            <div class="info-icon">❓</div>
+            <span>5 questions</span>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">⏱</div>
+            <span>5 à 7 minutes</span>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">🔒</div>
+            <span>Anonymisé</span>
+          </div>
+        </div>
+
+        <div class="cta">
+          <form method="post" action="/start" style="display:contents">
+            <button class="btn btn-primary" style="font-size:1rem; padding:14px 28px;">
+              🚀 Faire le quiz
+            </button>
+          </form>
+          <a class="btn btn-secondary" href="/admin/login">🔐 Admin</a>
+        </div>
+
       </div>
 
       <div class="hero-right">
         <img class="hero-img" src="/static/foot.jpg" alt="Illustration pied">
       </div>
     </header>
+
+    <!-- Bloc "comment ça marche" -->
+    <div class="card animate-in" style="animation-delay:.1s; padding:28px 36px;">
+      <h2 style="margin-bottom:18px; font-size:1.2rem; color:var(--text2);">Comment ça marche ?</h2>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--teal-lt);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">👤</div>
+          <div>
+            <div style="font-weight:600;font-size:.9rem">1. Votre profil</div>
+            <div style="font-size:.82rem;color:var(--text2);margin-top:2px">Quelques informations professionnelles</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">📋</div>
+          <div>
+            <div style="font-weight:600;font-size:.9rem">2. Le quiz</div>
+            <div style="font-size:.82rem;color:var(--text2);margin-top:2px">5 questions sur la prévention podologique</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--coral-lt);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🏆</div>
+          <div>
+            <div style="font-weight:600;font-size:.9rem">3. Votre score</div>
+            <div style="font-size:.82rem;color:var(--text2);margin-top:2px">Résultat immédiat à la fin</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 </body></html>

@@ -2,128 +2,149 @@
 <html lang="fr"><head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
-  <title>{{ quiz_title }}</title>
-  <style>
-    .quiz-wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
-    .progress-bar { background: #e8eaf0; border-radius: 8px; height: 8px; margin-bottom: 24px; }
-    .progress-fill { background: #4f8ef7; height: 8px; border-radius: 8px; transition: width .3s ease; }
-    .question-card { display: none; }
-    .question-card.active { display: block; }
-    .question-num { font-size:.85rem; color:#888; margin-bottom:8px; }
-    .question-topic { display:inline-block; background:#eef2ff; color:#4f8ef7; font-size:.78rem; font-weight:600; padding:3px 10px; border-radius:20px; margin-bottom:12px; }
-    .question-text { font-size:1.1rem; font-weight:600; margin-bottom:18px; line-height:1.5; }
-    .choice-label { display:flex; align-items:flex-start; gap:12px; padding:12px 14px; border:2px solid #e8eaf0; border-radius:10px; margin-bottom:10px; cursor:pointer; transition:border-color .15s, background .15s; }
-    .choice-label:hover { border-color:#4f8ef7; background:#f5f8ff; }
-    .choice-label input { margin-top:3px; accent-color:#4f8ef7; flex-shrink:0; }
-    .choice-label.selected { border-color:#4f8ef7; background:#eef2ff; }
-    .hint { font-size:.82rem; color:#aaa; margin-top:6px; }
-    .nav-btns { display:flex; gap:10px; margin-top:24px; }
-    .nav-btns .btn { flex:1; }
-    .msg-feedback { min-height:24px; font-size:.9rem; color:#555; margin-top:10px; }
-    .final-card { text-align:center; padding:32px 16px; }
-    .final-card h2 { font-size:1.6rem; margin-bottom:12px; }
-    .score-big { font-size:3rem; font-weight:700; color:#4f8ef7; }
-  </style>
+  <title>Quiz – PodoTest</title>
 </head>
 <body class="page">
   <div class="quiz-wrap">
-    <div class="card">
-      <h1 style="margin-bottom:4px">{{ quiz_title }}</h1>
-      <p class="muted small" style="margin-bottom:4px">
-        Bonjour <strong>{{ prenom }}</strong> — {{ questions|length }} questions — prenez votre temps.
-      </p>
-      <p class="muted small" style="margin-bottom:20px">Étape 2 / 2</p>
 
-      <div class="progress-bar">
+    <!-- Étape 2/2 -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px" class="animate-in">
+      <div class="step-dot done">✓</div>
+      <div class="step-line done"></div>
+      <div class="step-dot active">2</div>
+      <span style="font-size:.82rem;color:var(--text2);margin-left:6px">Étape 2 / 2 — Quiz</span>
+    </div>
+
+    <div class="card animate-in" style="animation-delay:.05s">
+
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="eyebrow">🦶 PodoTest</div>
+          <h1 style="font-size:1.6rem;margin:4px 0 0">Bonjour {{ prenom }} !</h1>
+        </div>
+        <div style="text-align:right">
+          <div id="counter" style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--teal)">1 / {{ questions|length }}</div>
+          <div style="font-size:.75rem;color:var(--text2)">question</div>
+        </div>
+      </div>
+
+      <!-- Barre de progression -->
+      <div class="progress-track">
         <div class="progress-fill" id="progress" style="width:0%"></div>
       </div>
 
-      <!-- Questions générées côté serveur, navigation JS côté client -->
+      <!-- Formulaire -->
       <form id="quizForm" method="post" action="/t/{{ token }}">
         {% for q in questions %}
         <div class="question-card{% if loop.first %} active{% endif %}" id="qcard-{{ loop.index0 }}">
-          <div class="question-num">Question {{ loop.index }} / {{ questions|length }}</div>
-          <div class="question-topic">{{ q.topic }}</div>
-          <div class="question-text">{{ q.text }}</div>
+
+          <div class="q-meta">
+            <span class="q-num">Question {{ loop.index }} / {{ questions|length }}</span>
+            {% set topic_colors = ['tag-teal','tag-blue','tag-coral','tag-gold','tag-teal'] %}
+            <span class="tag {{ topic_colors[loop.index0 % 5] }}">{{ q.topic }}</span>
+          </div>
+
+          <div class="q-text">{{ q.text }}</div>
+
+          {% if q.kind == "multi" %}
+          <div class="hint-multi">💡 Plusieurs réponses possibles</div>
+          {% endif %}
 
           {% if q.kind == "single" %}
             {% for c in q.choices %}
             <label class="choice-label" id="lbl-{{ q.id }}-{{ c.id }}">
-              <input type="radio" name="q{{ q.id }}" value="{{ c.id }}"
-                     onchange="highlightChoice(this)">
+              <input type="radio" name="q{{ q.id }}" value="{{ c.id }}" onchange="highlightChoice(this)">
               <span>{{ c.label }}</span>
             </label>
             {% endfor %}
           {% else %}
             {% for c in q.choices %}
             <label class="choice-label" id="lbl-{{ q.id }}-{{ c.id }}">
-              <input type="checkbox" name="q{{ q.id }}" value="{{ c.id }}"
-                     onchange="highlightChoice(this)">
+              <input type="checkbox" name="q{{ q.id }}" value="{{ c.id }}" onchange="highlightChoice(this)">
               <span>{{ c.label }}</span>
             </label>
             {% endfor %}
-            <p class="hint">Plusieurs réponses possibles.</p>
           {% endif %}
+
         </div>
         {% endfor %}
 
-        <!-- Carte finale (soumission) -->
+        <!-- Carte de confirmation finale -->
         <div class="question-card" id="qcard-final">
           <div class="final-card">
-            <div style="font-size:3rem">✅</div>
-            <h2>Tout est rempli !</h2>
-            <p class="muted">Cliquez sur <strong>Envoyer</strong> pour valider vos réponses.</p>
-            <button type="submit" class="btn" style="margin-top:16px; width:100%">Envoyer mes réponses</button>
+            <div class="final-icon">✅</div>
+            <h2 style="margin-bottom:10px">Tout est complété !</h2>
+            <p class="muted" style="margin-bottom:24px">
+              Vous avez répondu à toutes les questions.<br>
+              Cliquez sur <strong>Envoyer</strong> pour valider.
+            </p>
+            <button type="submit" class="btn btn-primary"
+                    style="padding:15px 36px;font-size:1.05rem">
+              🚀 Envoyer mes réponses
+            </button>
           </div>
         </div>
+
       </form>
 
       <div class="msg-feedback" id="msg"></div>
 
+      <!-- Boutons navigation -->
       <div class="nav-btns" id="navBtns">
-        <button class="btn secondary" id="btnPrev" onclick="navigate(-1)" type="button">← Précédent</button>
-        <button class="btn" id="btnNext" onclick="navigate(1)" type="button">Suivant →</button>
+        <button class="btn btn-secondary" id="btnPrev" onclick="navigate(-1)" type="button">
+          ← Précédent
+        </button>
+        <button class="btn btn-primary" id="btnNext" onclick="navigate(1)" type="button">
+          Suivant →
+        </button>
       </div>
+
     </div>
   </div>
 
   <script>
     const TOTAL = {{ questions|length }};
-    let current = 0; // 0..TOTAL-1 = questions, TOTAL = carte finale
+    let current = 0;
 
     function showCard(idx) {
       document.querySelectorAll('.question-card').forEach(c => c.classList.remove('active'));
       const id = idx < TOTAL ? 'qcard-' + idx : 'qcard-final';
       document.getElementById(id).classList.add('active');
 
-      // Barre de progression
+      // Progression
       const pct = Math.round((idx / TOTAL) * 100);
       document.getElementById('progress').style.width = pct + '%';
 
+      // Compteur
+      document.getElementById('counter').textContent =
+        idx < TOTAL ? (idx + 1) + ' / ' + TOTAL : '✓';
+
       // Boutons
-      document.getElementById('btnPrev').disabled = (idx === 0);
       const navBtns = document.getElementById('navBtns');
+      document.getElementById('btnPrev').disabled = (idx === 0);
       if (idx >= TOTAL) {
-        navBtns.style.display = 'none'; // carte finale = bouton submit intégré
+        navBtns.style.display = 'none';
       } else {
         navBtns.style.display = 'flex';
-        document.getElementById('btnNext').textContent = (idx === TOTAL - 1) ? 'Terminer ✓' : 'Suivant →';
+        document.getElementById('btnNext').textContent =
+          idx === TOTAL - 1 ? 'Terminer ✓' : 'Suivant →';
       }
-
       document.getElementById('msg').textContent = '';
     }
 
     function navigate(dir) {
       const next = current + dir;
-      if (next < 0) return;
-      if (next > TOTAL) return;
+      if (next < 0 || next > TOTAL) return;
       current = next;
       showCard(current);
+      window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
     function highlightChoice(input) {
-      // Met à jour la mise en évidence visuelle
       const card = input.closest('.question-card');
       if (input.type === 'radio') {
         card.querySelectorAll('.choice-label').forEach(l => l.classList.remove('selected'));
@@ -134,7 +155,6 @@
       }
     }
 
-    // Init
     showCard(0);
   </script>
 </body></html>
