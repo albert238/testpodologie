@@ -384,9 +384,18 @@ def export_csv(request: Request, db: OrmSession = Depends(get_db)):
         return RedirectResponse(url="/admin/login", status_code=302)
 
     out = io.StringIO()
-    w = csv.writer(out)
-    w.writerow(["date", "token", "prenom", "nom", "role", "experience",
-                "type_magasin", "score", "total", "score_pct"])
+    # BOM UTF-8 pour que Excel l'ouvre correctement avec les accents
+    out.write('\ufeff')
+    w = csv.writer(out, delimiter=';')
+
+    # En-tête
+    w.writerow([
+        "date", "prenom", "nom", "role", "experience", "type_magasin",
+        "score_global", "total", "score_pct",
+        "n_question", "theme", "question", "type",
+        "reponse_donnee", "bonne_reponse", "correct",
+        "manquait", "en_trop"
+    ])
 
     sessions = db.query(models.Session).order_by(models.Session.id.desc()).all()
     for s in sessions:
@@ -397,14 +406,62 @@ def export_csv(request: Request, db: OrmSession = Depends(get_db)):
             total_q = len(answers)
         if total_q == 0:
             total_q = len(answers)
-        correct = sum(1 for a in answers if a.is_correct)
-        pct = round(correct / total_q * 100) if total_q else 0
-        w.writerow([s.created_at, s.token, s.prenom, s.nom, s.role,
-                    s.experience, s.shop_type, correct, total_q, pct])
+        correct_total = sum(1 for a in answers if a.is_correct)
+        pct = round(correct_total / total_q * 100) if total_q else 0
+
+        if not answers:
+            # Candidat sans réponses — une ligne quand même
+            w.writerow([
+                s.created_at.strftime('%d/%m/%Y %H:%M') if s.created_at else '',
+                s.prenom, s.nom,
+                s.role.replace('_', ' ') if s.role else '',
+                s.experience.replace('_', ' ') if s.experience else '',
+                s.shop_type.replace('_', ' ') if s.shop_type else '',
+                0, total_q, 0,
+                '', '', '', '', '', '', '', '', ''
+            ])
+            continue
+
+        for i, a in enumerate(answers, 1):
+            q = db.query(models.Question).filter(models.Question.id == a.question_id).first()
+            if not q:
+                continue
+            try:
+                choices  = json.loads(q.choices_json or "[]")
+                selected = json.loads(a.selected_json or "[]")
+            except Exception:
+                choices, selected = [], []
+
+            id_to_label = {c.get("id"): c.get("label", "") for c in choices}
+            correct_ids = sorted([c.get("id") for c in choices if c.get("is_correct")])
+            selected_ids = sorted(selected)
+
+            selected_labels = " | ".join([id_to_label.get(x, x) for x in selected_ids])
+            correct_labels  = " | ".join([id_to_label.get(x, x) for x in correct_ids])
+            missing = " | ".join([id_to_label.get(x, x) for x in correct_ids if x not in selected_ids])
+            extra   = " | ".join([id_to_label.get(x, x) for x in selected_ids if x not in correct_ids])
+
+            w.writerow([
+                s.created_at.strftime('%d/%m/%Y %H:%M') if s.created_at else '',
+                s.prenom, s.nom,
+                s.role.replace('_', ' ') if s.role else '',
+                s.experience.replace('_', ' ') if s.experience else '',
+                s.shop_type.replace('_', ' ') if s.shop_type else '',
+                correct_total, total_q, pct,
+                i,
+                q.topic,
+                q.text,
+                "Choix multiple" if q.kind == "multi" else "Choix unique",
+                selected_labels,
+                correct_labels,
+                "OUI" if a.is_correct else "NON",
+                missing,
+                extra,
+            ])
 
     out.seek(0)
     return StreamingResponse(
         iter([out.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=podotest_resultats.csv"},
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=podotest_resultats_detail.csv"},
     )
