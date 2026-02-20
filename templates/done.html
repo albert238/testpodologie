@@ -6,64 +6,216 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
   <title>Résultat – PodoTest</title>
+  <style>
+    .done-wrap { max-width: 640px; margin: 0 auto; padding: 28px 16px; }
+
+    /* ── Détail questions ── */
+    .q-detail { margin-top: 28px; text-align: left; }
+    .q-detail-title {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--teal);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .q-detail-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    .q-item {
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      background: #fff;
+      transition: box-shadow .15s;
+    }
+    .q-item.correct { border-color: #86efac; background: #f0fdf4; }
+    .q-item.wrong   { border-color: #fca5a5; background: #fff8f8; }
+
+    .q-item-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .q-status {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .q-item-topic {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--teal);
+      margin-bottom: 2px;
+    }
+    .q-item-text {
+      font-size: .9rem;
+      font-weight: 600;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    .q-answers { font-size: .85rem; line-height: 1.6; margin-top: 6px; }
+    .q-answers .row { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 3px; }
+    .q-answers .lbl { font-weight: 700; white-space: nowrap; }
+    .lbl-given   { color: #dc2626; }
+    .lbl-correct { color: #059669; }
+    .lbl-missing { color: #d97706; }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 600;
+    }
+    .tag-correct { background:#dcfce7; color:#166534; }
+    .tag-wrong   { background:#fee2e2; color:#991b1b; }
+    .tag-missing { background:#fef9c3; color:#854d0e; }
+    .tag-extra   { background:#fee2e2; color:#991b1b; }
+    .tag-ok      { background:#dcfce7; color:#166534; }
+  </style>
 </head>
 <body class="page">
-  <div class="done-wrap">
-    <div class="card animate-in" style="text-align:center;padding:36px 28px">
+<div class="done-wrap">
+  <div class="card animate-in" style="text-align:center; padding:36px 28px">
 
-    {% if correct is defined %}
-      {% set pct = (correct / total * 100) | int %}
+  {% if correct is defined %}
+    {% set pct = (correct / total * 100) | int %}
 
-      <div class="eyebrow" style="justify-content:center;margin-bottom:10px">
-        🦶 PodoTest · Résultat
-      </div>
+    <div class="eyebrow" style="justify-content:center;margin-bottom:10px">
+      🦶 PodoTest · Résultat
+    </div>
 
-      <h1 style="font-size:2rem;margin-bottom:4px">
-        {% if pct >= 80 %}Excellent travail !
-        {% elif pct >= 60 %}Bien joué !
-        {% else %}À approfondir
-        {% endif %}
-      </h1>
-      <p class="muted" style="margin-bottom:0">{{ prenom }}, voici votre score :</p>
-
-      <!-- Anneau SVG -->
-      <div class="score-ring-wrap">
-        {% set radius = 54 %}
-        {% set circ = 339 %}
-        {% set dash = (pct / 100 * circ) | int %}
-        <svg width="130" height="130" viewBox="0 0 130 130">
-          <circle cx="65" cy="65" r="{{ radius }}" fill="none" stroke="#e2e8f0" stroke-width="10"/>
-          <circle cx="65" cy="65" r="{{ radius }}" fill="none"
-            stroke="{% if pct >= 80 %}#059669{% elif pct >= 60 %}#2563eb{% else %}#f59e0b{% endif %}"
-            stroke-width="10" stroke-linecap="round"
-            stroke-dasharray="{{ dash }} {{ circ }}"
-            style="transition:stroke-dasharray .8s ease"/>
-        </svg>
-        <div class="score-num">
-          {{ correct }}/{{ total }}
-          <small>{{ pct }}%</small>
-        </div>
-      </div>
-
-      {% if pct >= 80 %}
-        <div class="mention-badge mention-excellent">🏆 Excellent – {{ pct }}%</div>
-      {% elif pct >= 60 %}
-        <div class="mention-badge mention-bien">👍 Bien – {{ pct }}%</div>
-      {% else %}
-        <div class="mention-badge mention-moyen">📚 À approfondir – {{ pct }}%</div>
+    <h1 style="font-size:2rem;margin-bottom:4px">
+      {% if pct >= 80 %}Excellent travail !
+      {% elif pct >= 60 %}Bien joué !
+      {% else %}À approfondir
       {% endif %}
+    </h1>
+    <p class="muted" style="margin-bottom:0">{{ prenom }}, voici votre score :</p>
 
-      <p class="muted small" style="margin-bottom:24px">
-        Vos réponses ont été enregistrées. Merci pour votre participation !
-      </p>
+    <!-- Anneau SVG -->
+    <div class="score-ring-wrap">
+      {% set radius = 54 %}
+      {% set circ = 339 %}
+      {% set dash = (pct / 100 * circ) | int %}
+      <svg width="130" height="130" viewBox="0 0 130 130">
+        <circle cx="65" cy="65" r="{{ radius }}" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+        <circle cx="65" cy="65" r="{{ radius }}" fill="none"
+          stroke="{% if pct >= 80 %}#059669{% elif pct >= 60 %}#2563eb{% else %}#f59e0b{% endif %}"
+          stroke-width="10" stroke-linecap="round"
+          stroke-dasharray="{{ dash }} {{ circ }}"
+          style="transition:stroke-dasharray .8s ease"/>
+      </svg>
+      <div class="score-num">
+        {{ correct }}/{{ total }}
+        <small>{{ pct }}%</small>
+      </div>
+    </div>
 
+    {% if pct >= 80 %}
+      <div class="mention-badge mention-excellent">🏆 Excellent – {{ pct }}%</div>
+    {% elif pct >= 60 %}
+      <div class="mention-badge mention-bien">👍 Bien – {{ pct }}%</div>
     {% else %}
-      <div style="font-size:3rem;margin-bottom:12px">✅</div>
-      <h2>{{ message }}</h2>
-      <p class="muted" style="margin:12px 0 24px">Vous pouvez fermer cette page.</p>
+      <div class="mention-badge mention-moyen">📚 À approfondir – {{ pct }}%</div>
     {% endif %}
 
-      <a class="btn btn-secondary" href="/">← Retour à l'accueil</a>
+    <p class="muted small" style="margin-bottom:0">
+      Vos réponses ont été enregistrées. Merci pour votre participation !
+    </p>
+
+    <!-- ── Détail par question ── -->
+    {% if detail %}
+    <div class="q-detail">
+      <div class="q-detail-title">📋 Détail de vos réponses</div>
+
+      {% for d in detail %}
+      <div class="q-item {% if d.is_correct %}correct{% else %}wrong{% endif %}">
+        <div class="q-item-header">
+          <span class="q-status">{% if d.is_correct %}✅{% else %}❌{% endif %}</span>
+          <div>
+            <div class="q-item-topic">{{ d.topic }}</div>
+            <div class="q-item-text">{{ d.text }}</div>
+          </div>
+        </div>
+
+        <div class="q-answers">
+          {% if d.is_correct %}
+            <div class="row">
+              <span class="lbl lbl-correct">Votre réponse :</span>
+              <span>
+                {% for r in d.selected_labels %}
+                  <span class="tag tag-correct">{{ r }}</span>
+                {% endfor %}
+              </span>
+            </div>
+          {% else %}
+            {% if d.selected_labels %}
+            <div class="row">
+              <span class="lbl lbl-given">Votre réponse :</span>
+              <span>
+                {% for r in d.selected_labels %}
+                  <span class="tag tag-wrong">{{ r }}</span>
+                {% endfor %}
+              </span>
+            </div>
+            {% else %}
+            <div class="row"><span class="lbl lbl-given">Votre réponse :</span> <em style="color:#999">Aucune réponse</em></div>
+            {% endif %}
+
+            <div class="row">
+              <span class="lbl lbl-correct">Bonne réponse :</span>
+              <span>
+                {% for r in d.correct_labels %}
+                  <span class="tag tag-ok">{{ r }}</span>
+                {% endfor %}
+              </span>
+            </div>
+
+            {% if d.kind == "multi" and d.missing %}
+            <div class="row">
+              <span class="lbl lbl-missing">Oublié :</span>
+              <span>
+                {% for r in d.missing %}
+                  <span class="tag tag-missing">{{ r }}</span>
+                {% endfor %}
+              </span>
+            </div>
+            {% endif %}
+
+            {% if d.kind == "multi" and d.extra %}
+            <div class="row">
+              <span class="lbl lbl-given">En trop :</span>
+              <span>
+                {% for r in d.extra %}
+                  <span class="tag tag-extra">{{ r }}</span>
+                {% endfor %}
+              </span>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
     </div>
+    {% endif %}
+
+  {% else %}
+    <div style="font-size:3rem;margin-bottom:12px">✅</div>
+    <h2>{{ message }}</h2>
+    <p class="muted" style="margin:12px 0 24px">Vous pouvez fermer cette page.</p>
+  {% endif %}
+
+    <a class="btn btn-secondary" href="/" style="margin-top:20px">← Retour à l'accueil</a>
   </div>
+</div>
 </body></html>

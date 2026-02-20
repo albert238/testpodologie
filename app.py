@@ -235,12 +235,51 @@ async def submit_quiz(token: str, request: Request, db: OrmSession = Depends(get
             ))
 
     db.commit()
+
+    # Construire le détail par question pour done.html
+    detail = []
+    for q in questions:
+        try:
+            choices = json.loads(q.choices_json or "[]")
+        except Exception:
+            choices = []
+        correct_ids = sorted([c.get("id") for c in choices if c.get("is_correct")])
+        key = f"q{q.id}"
+        if q.kind == "multi":
+            selected_ids = sorted([str(x) for x in form.getlist(key)])
+        else:
+            v = form.get(key, "")
+            selected_ids = [str(v)] if v else []
+
+        is_correct = (selected_ids == correct_ids)
+
+        # Labels lisibles
+        id_to_label = {c.get("id"): c.get("label", "") for c in choices}
+        selected_labels = [id_to_label.get(i, i) for i in selected_ids]
+        correct_labels  = [id_to_label.get(i, i) for i in correct_ids]
+
+        # Pour multi : quelles réponses manquaient ou étaient en trop
+        missing  = [id_to_label.get(i, i) for i in correct_ids  if i not in selected_ids]
+        extra    = [id_to_label.get(i, i) for i in selected_ids if i not in correct_ids]
+
+        detail.append({
+            "topic":            q.topic,
+            "text":             q.text,
+            "kind":             q.kind,
+            "is_correct":       is_correct,
+            "selected_labels":  selected_labels,
+            "correct_labels":   correct_labels,
+            "missing":          missing,
+            "extra":            extra,
+        })
+
     return templates.TemplateResponse("done.html", {
         "request": request,
         "message": f"Merci {sess.prenom} !",
         "correct": correct_count,
-        "total": len(questions),
-        "prenom": sess.prenom,
+        "total":   len(questions),
+        "prenom":  sess.prenom,
+        "detail":  detail,
     })
 
 
@@ -292,7 +331,6 @@ def admin(request: Request, db: OrmSession = Depends(get_db)):
     sessions_data = []
     for s in sessions:
         answers = db.query(models.Answer).filter(models.Answer.session_id == s.id).all()
-        # total = nombre de questions posées à ce candidat (5), pas le total en base (11)
         try:
             total_q = len(json.loads(s.question_ids_json or "[]"))
         except Exception:
@@ -300,11 +338,39 @@ def admin(request: Request, db: OrmSession = Depends(get_db)):
         if total_q == 0:
             total_q = len(answers)
         correct = sum(1 for a in answers if a.is_correct)
+
+        # Détail par question
+        detail = []
+        for a in answers:
+            q = db.query(models.Question).filter(models.Question.id == a.question_id).first()
+            if not q:
+                continue
+            try:
+                choices  = json.loads(q.choices_json or "[]")
+                selected = json.loads(a.selected_json or "[]")
+            except Exception:
+                choices, selected = [], []
+            id_to_label = {c.get("id"): c.get("label", "") for c in choices}
+            correct_ids = sorted([c.get("id") for c in choices if c.get("is_correct")])
+            missing = [id_to_label.get(i, i) for i in correct_ids if i not in selected]
+            extra   = [id_to_label.get(i, i) for i in selected  if i not in correct_ids]
+            detail.append({
+                "topic":           q.topic,
+                "text":            q.text,
+                "kind":            q.kind,
+                "is_correct":      a.is_correct,
+                "selected_labels": [id_to_label.get(i, i) for i in selected],
+                "correct_labels":  [id_to_label.get(i, i) for i in correct_ids],
+                "missing":         missing,
+                "extra":           extra,
+            })
+
         sessions_data.append({
-            "session": s,
-            "correct": correct,
-            "total": total_q,
-            "score_pct": round(correct / total_q * 100) if total_q else 0,
+            "session":    s,
+            "correct":    correct,
+            "total":      total_q,
+            "score_pct":  round(correct / total_q * 100) if total_q else 0,
+            "detail":     detail,
         })
 
     return templates.TemplateResponse("admin.html", {

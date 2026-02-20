@@ -66,7 +66,7 @@
         <tbody>
           {% for row in sessions_data %}
           {% set s = row.session %}
-          <tr>
+          <tr style="cursor:pointer" onclick="toggleDetail('d{{ loop.index }}')">
             <td style="white-space:nowrap;color:var(--text2);font-size:.82rem">
               {{ s.created_at.strftime('%d/%m/%Y') if s.created_at else '—' }}<br>
               <span style="font-size:.75rem">{{ s.created_at.strftime('%H:%M') if s.created_at else '' }}</span>
@@ -100,6 +100,46 @@
               {% else %}
                 <span class="score-pill score-low">📚 {{ row.score_pct }}%</span>
               {% endif %}
+              <span style="font-size:.75rem;color:var(--teal);margin-left:4px">▼</span>
+            </td>
+          </tr>
+          <!-- Ligne de détail dépliable -->
+          <tr id="d{{ loop.index }}" style="display:none;background:#f8fafc">
+            <td colspan="7" style="padding:14px 20px">
+              {% if row.detail %}
+                <div style="display:flex;flex-direction:column;gap:8px">
+                {% for d in row.detail %}
+                  <div style="background:#fff;border-radius:10px;border:1.5px solid {% if d.is_correct %}#86efac{% else %}#fca5a5{% endif %};padding:10px 14px">
+                    <div style="display:flex;align-items:flex-start;gap:8px">
+                      <span>{% if d.is_correct %}✅{% else %}❌{% endif %}</span>
+                      <div style="flex:1">
+                        <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--teal);margin-bottom:2px">{{ d.topic }}</div>
+                        <div style="font-size:.87rem;font-weight:600;margin-bottom:6px;line-height:1.4">{{ d.text }}</div>
+                        {% if d.is_correct %}
+                          <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600">
+                            ✓ {{ d.selected_labels | join(' + ') }}
+                          </span>
+                        {% else %}
+                          {% if d.selected_labels %}
+                            <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600;margin-right:4px">
+                              ✗ {{ d.selected_labels | join(' + ') }}
+                            </span>
+                          {% endif %}
+                          <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600">
+                            → {{ d.correct_labels | join(' + ') }}
+                          </span>
+                          {% if d.missing %}
+                            <div style="font-size:.76rem;color:#d97706;margin-top:4px">⚠ Oublié : {{ d.missing | join(', ') }}</div>
+                          {% endif %}
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+                </div>
+              {% else %}
+                <span style="color:#9ca3af;font-size:.85rem;font-style:italic">Aucun détail disponible</span>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -116,4 +156,11 @@
     </div>
 
   </div>
+<script>
+function toggleDetail(id) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
 </body></html>
