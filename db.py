@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 # Sur Render : variable d'env DATABASE_URL (PostgreSQL)
@@ -10,9 +10,19 @@ _db_url = os.environ.get("DATABASE_URL", "sqlite:///./podotest.sqlite3")
 if _db_url.startswith("postgres://"):
     _db_url = _db_url.replace("postgres://", "postgresql://", 1)
 
-_connect_args = {"check_same_thread": False} if _db_url.startswith("sqlite") else {}
+_is_sqlite = _db_url.startswith("sqlite")
+_connect_args = {"check_same_thread": False} if _is_sqlite else {}
 
-engine = create_engine(_db_url, connect_args=_connect_args)
+if _is_sqlite:
+    engine = create_engine(_db_url, connect_args=_connect_args)
+else:
+    # Forcer le schéma public pour PostgreSQL (évite "no schema selected")
+    engine = create_engine(
+        _db_url,
+        connect_args=_connect_args,
+        execution_options={"schema_translate_map": {None: "public"}},
+    )
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 class Base(DeclarativeBase):
