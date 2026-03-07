@@ -6,7 +6,7 @@ import secrets
 from sqlalchemy.orm import Session as OrmSession
 from models import Quiz, Question, Session
 
-NB_QUESTIONS = 8
+NB_QUESTIONS = 15
 
 
 def ensure_questions(db: OrmSession) -> None:
@@ -61,267 +61,190 @@ def upsert_seed(db: OrmSession) -> str:
 def _insert_questions(db: OrmSession, quiz_id: int) -> None:
     questions_data = [
 
-        # ══ FICHE 1 — Hallux Valgus ══════════════════════════════════
+        # ── FICHE 1 · Hallux Valgus ───────────────────────────────────
         {
             "kind": "single",
             "topic": "Hallux Valgus",
-            "text": "Un client a un hallux valgus (oignon au gros orteil). Quelle chaussure lui recommandez-vous ?",
+            "text": "Un client a un oignon douloureux sur le gros orteil. Quelle chaussure lui conseillez-vous ?",
             "choices": [
-                {"id": "A", "label": "Chaussure bout pointu avec talon haut", "is_correct": False},
-                {"id": "B", "label": "Chaussure large, cuir souple, sans coutures ni oeillets", "is_correct": True},
-                {"id": "C", "label": "Chaussure de sport synthétique serrée", "is_correct": False},
+                {"id": "A", "label": "Cuir souple, avant-pied large, sans coutures ni œillets", "is_correct": True},
+                {"id": "B", "label": "Bout pointu en verni pour maintenir l'orteil", "is_correct": False},
+                {"id": "C", "label": "Basket synthétique bien ajustée", "is_correct": False},
                 {"id": "D", "label": "Sandale à talon compensé", "is_correct": False},
             ],
         },
         {
             "kind": "multi",
             "topic": "Hallux Valgus",
-            "text": "Quels facteurs favorisent l'apparition d'un hallux valgus ? (plusieurs réponses)",
+            "text": "Quelles caractéristiques de chaussure sont à éviter pour un client avec un hallux valgus ? (plusieurs réponses)",
             "choices": [
-                {"id": "A", "label": "Porter des chaussures étroites et rigides", "is_correct": True},
-                {"id": "B", "label": "Avoir un pied égyptien (1er orteil le plus long)", "is_correct": True},
-                {"id": "C", "label": "Marcher pieds nus régulièrement", "is_correct": False},
-                {"id": "D", "label": "Hérédité familiale", "is_correct": True},
+                {"id": "A", "label": "Bout pointu ou étroit", "is_correct": True},
+                {"id": "B", "label": "Talon haut", "is_correct": True},
+                {"id": "C", "label": "Coutures ou œillets sur l'avant-pied", "is_correct": True},
+                {"id": "D", "label": "Cuir souple avec avant-pied large", "is_correct": False},
             ],
         },
 
-        # ══ FICHE 2 — Mycose ═════════════════════════════════════════
+        # ── FICHE 2 · Mycose & Hygiène ───────────────────────────────
+        {
+            "kind": "single",
+            "topic": "Mycose & Hygiène",
+            "text": "Quelle matière de chaussure recommandez-vous à un client qui transpire beaucoup des pieds ?",
+            "choices": [
+                {"id": "A", "label": "Synthétique imperméable pour garder les pieds au sec", "is_correct": False},
+                {"id": "B", "label": "Cuir naturel ou textile respirant", "is_correct": True},
+                {"id": "C", "label": "Plastique souple facile à nettoyer", "is_correct": False},
+                {"id": "D", "label": "Verni brillant", "is_correct": False},
+            ],
+        },
         {
             "kind": "multi",
             "topic": "Mycose & Hygiène",
-            "text": "Un client a souvent des mycoses aux pieds. Quels conseils lui donner ? (plusieurs réponses)",
+            "text": "Pour limiter les mycoses, quels conseils donner sur la chaussure et les chaussettes ? (plusieurs réponses)",
             "choices": [
-                {"id": "A", "label": "Bien sécher entre les orteils après la douche", "is_correct": True},
-                {"id": "B", "label": "Garder toujours les mêmes chaussures fermées", "is_correct": False},
-                {"id": "C", "label": "Changer les chaussettes souvent et les laver à 60 °C", "is_correct": True},
-                {"id": "D", "label": "Alterner ses chaussures pour les laisser sécher", "is_correct": True},
-            ],
-        },
-        {
-            "kind": "single",
-            "topic": "Mycose & Hygiène",
-            "text": "Quelle matière de chaussure est la plus adaptée pour limiter les risques de mycose ?",
-            "choices": [
-                {"id": "A", "label": "Synthétique imperméable", "is_correct": False},
-                {"id": "B", "label": "Cuir naturel respirant", "is_correct": True},
-                {"id": "C", "label": "Plastique souple", "is_correct": False},
-                {"id": "D", "label": "Tissu non-traité", "is_correct": False},
+                {"id": "A", "label": "Alterner les chaussures chaque jour pour les laisser sécher", "is_correct": True},
+                {"id": "B", "label": "Porter des chaussettes en coton ou laine, changées chaque jour", "is_correct": True},
+                {"id": "C", "label": "Choisir une chaussure en matière respirante", "is_correct": True},
+                {"id": "D", "label": "Garder toujours la même paire pour un meilleur maintien", "is_correct": False},
             ],
         },
 
-        # ══ FICHE 3 — Épine calcanéenne ══════════════════════════════
+        # ── FICHE 3 · Épine calcanéenne ──────────────────────────────
         {
             "kind": "single",
             "topic": "Épine calcanéenne",
-            "text": "Un client a mal sous le talon surtout le matin au lever. Quel facteur vient de l'extérieur ?",
+            "text": "Un client a mal sous le talon dès le matin. Quelle semelle lui proposer en priorité ?",
             "choices": [
-                {"id": "A", "label": "Avoir un pied creux", "is_correct": False},
-                {"id": "B", "label": "Être en surpoids", "is_correct": False},
-                {"id": "C", "label": "Porter de mauvaises chaussures", "is_correct": True},
-                {"id": "D", "label": "Avoir un centre de gravité mal placé", "is_correct": False},
-            ],
-        },
-        {
-            "kind": "single",
-            "topic": "Épine calcanéenne",
-            "text": "Quel type de semelle est le plus adapté pour soulager une épine calcanéenne ?",
-            "choices": [
-                {"id": "A", "label": "Semelle plate et rigide", "is_correct": False},
-                {"id": "B", "label": "Semelle avec amorti du talon et évidement sous la zone douloureuse", "is_correct": True},
-                {"id": "C", "label": "Semelle surélevée à l'avant", "is_correct": False},
+                {"id": "A", "label": "Semelle plate et rigide pour stabiliser", "is_correct": False},
+                {"id": "B", "label": "Semelle avec amorti sous le talon et évidement sous la zone douloureuse", "is_correct": True},
+                {"id": "C", "label": "Semelle surélevée à l'avant pour décharger le talon", "is_correct": False},
                 {"id": "D", "label": "Semelle de sport standard", "is_correct": False},
             ],
         },
 
-        # ══ FICHE 4 — Ongle incarné ═══════════════════════════════════
-        {
-            "kind": "multi",
-            "topic": "Ongle incarné",
-            "text": "Quelles sont les causes courantes d'un ongle incarné ? (plusieurs réponses)",
-            "choices": [
-                {"id": "A", "label": "Couper les ongles trop courts ou en arrondi", "is_correct": True},
-                {"id": "B", "label": "Porter des chaussures trop serrées", "is_correct": True},
-                {"id": "C", "label": "Marcher pieds nus sur la plage", "is_correct": False},
-                {"id": "D", "label": "Avoir un ongle très courbé", "is_correct": True},
-            ],
-        },
+        # ── FICHE 4 · Ongle incarné ──────────────────────────────────
         {
             "kind": "single",
             "topic": "Ongle incarné",
-            "text": "Un client revient souvent avec des ongles incarnés. Quel conseil chaussure est prioritaire ?",
+            "text": "Un client souffre régulièrement d'ongles incarnés. Quelle chaussure lui évite d'aggraver le problème ?",
             "choices": [
-                {"id": "A", "label": "Chaussure étroite pour bien maintenir les orteils", "is_correct": False},
-                {"id": "B", "label": "Chaussure large avec empeigne haute sans coutures", "is_correct": True},
-                {"id": "C", "label": "Chaussure à talon pour décharger l'avant-pied", "is_correct": False},
-                {"id": "D", "label": "Chaussure ouverte type mule sans arrière", "is_correct": False},
+                {"id": "A", "label": "Chaussure étroite à bout pointu pour bien tenir l'orteil", "is_correct": False},
+                {"id": "B", "label": "Chaussure large avec empeigne haute sans coutures sur les orteils", "is_correct": True},
+                {"id": "C", "label": "Chaussure à talon pour reporter le poids vers l'arrière", "is_correct": False},
+                {"id": "D", "label": "Mule ouverte à l'arrière", "is_correct": False},
             ],
         },
 
-        # ══ FICHE 5 — Pied plat ═══════════════════════════════════════
+        # ── FICHE 5 · Pied plat ──────────────────────────────────────
         {
             "kind": "single",
             "topic": "Pied plat",
-            "text": "Un client a un pied plat douloureux. Quelle chaussure évite d'aggraver le problème ?",
+            "text": "Un client avec un pied plat douloureux cherche une chaussure de ville. Laquelle lui conseillez-vous ?",
             "choices": [
-                {"id": "A", "label": "Chaussure souple en tissu", "is_correct": False},
-                {"id": "B", "label": "Chaussure rigide en cuir avec bon maintien", "is_correct": True},
-                {"id": "C", "label": "Tong légère pour ne pas contraindre le pied", "is_correct": False},
-                {"id": "D", "label": "Chaussure sans coutures avec petit talon", "is_correct": False},
-            ],
-        },
-        {
-            "kind": "multi",
-            "topic": "Pied plat",
-            "text": "Quels signes peuvent indiquer qu'un client a un pied plat ? (plusieurs réponses)",
-            "choices": [
-                {"id": "A", "label": "La plante du pied touche entièrement le sol à la marche", "is_correct": True},
-                {"id": "B", "label": "La cheville part vers l'intérieur (valgus)", "is_correct": True},
-                {"id": "C", "label": "Des entorses à répétition côté extérieur", "is_correct": False},
-                {"id": "D", "label": "Douleur face interne de la cheville", "is_correct": True},
-            ],
-        },
-
-        # ══ FICHE 6 — Pied creux ══════════════════════════════════════
-        {
-            "kind": "multi",
-            "topic": "Pied creux",
-            "text": "Quels problèmes sont souvent causés par un pied creux ? (plusieurs réponses)",
-            "choices": [
-                {"id": "A", "label": "Entorses de cheville à répétition", "is_correct": True},
-                {"id": "B", "label": "Pronation excessive (pied qui s'écrase vers l'intérieur)", "is_correct": False},
-                {"id": "C", "label": "Griffes d'orteils", "is_correct": True},
-                {"id": "D", "label": "Durillons sous le talon et l'avant-pied", "is_correct": True},
+                {"id": "A", "label": "Chaussure souple en tissu pour ne pas contraindre le pied", "is_correct": False},
+                {"id": "B", "label": "Chaussure rigide en cuir avec bon maintien de la voûte", "is_correct": True},
+                {"id": "C", "label": "Tong légère pour laisser le pied libre", "is_correct": False},
+                {"id": "D", "label": "Mocassin souple sans soutien", "is_correct": False},
             ],
         },
         {
             "kind": "single",
-            "topic": "Pied creux",
-            "text": "Quelle chaussure conseillez-vous à un client avec un pied creux ?",
+            "topic": "Pied plat",
+            "text": "Pour un client avec pied plat, quel type de semelle intérieure est le plus indiqué ?",
             "choices": [
-                {"id": "A", "label": "Chaussure plate et souple sans soutien", "is_correct": False},
-                {"id": "B", "label": "Chaussure sans coutures avec un petit talon", "is_correct": True},
+                {"id": "A", "label": "Semelle plate sans relief", "is_correct": False},
+                {"id": "B", "label": "Semelle avec soutien de la voûte plantaire côté interne", "is_correct": True},
+                {"id": "C", "label": "Semelle rembourrée uniquement sous le talon", "is_correct": False},
+                {"id": "D", "label": "Semelle de sport universelle", "is_correct": False},
+            ],
+        },
+
+        # ── FICHE 6 · Pied creux ─────────────────────────────────────
+        {
+            "kind": "single",
+            "topic": "Pied creux",
+            "text": "Un client a un pied creux avec des douleurs à l'avant-pied. Quelle caractéristique de chaussure est prioritaire ?",
+            "choices": [
+                {"id": "A", "label": "Chaussure plate et souple sans soutien pour laisser le pied s'adapter", "is_correct": False},
+                {"id": "B", "label": "Chaussure avec un petit talon pour décharger l'avant-pied et sans coutures", "is_correct": True},
                 {"id": "C", "label": "Chaussure rigide à semelle plate", "is_correct": False},
-                {"id": "D", "label": "Chaussure de sport avec semelle épaisse", "is_correct": False},
+                {"id": "D", "label": "Chaussure de sport avec semelle épaisse uniforme", "is_correct": False},
             ],
         },
 
-        # ══ FICHE 7 — Griffes d'orteils ══════════════════════════════
-        {
-            "kind": "single",
-            "topic": "Griffes d'orteils",
-            "text": "Un client a les orteils en griffes. Quel est le critère le plus important dans le choix de la chaussure ?",
-            "choices": [
-                {"id": "A", "label": "Une semelle très amortissante", "is_correct": False},
-                {"id": "B", "label": "Une empeigne haute pour éviter le frottement sur les orteils", "is_correct": True},
-                {"id": "C", "label": "Un talon haut pour soulager l'avant-pied", "is_correct": False},
-                {"id": "D", "label": "Une chaussure étroite pour maintenir les orteils", "is_correct": False},
-            ],
-        },
+        # ── FICHE 7 · Griffes d'orteils ──────────────────────────────
         {
             "kind": "multi",
             "topic": "Griffes d'orteils",
-            "text": "Quels types de pieds prédisposent aux griffes d'orteils ? (plusieurs réponses)",
+            "text": "Un client a les orteils en griffes avec des cors sur le dessus. Quels critères sont indispensables dans le choix de la chaussure ? (plusieurs réponses)",
             "choices": [
-                {"id": "A", "label": "Pied grec (2ème orteil plus long)", "is_correct": True},
-                {"id": "B", "label": "Pied creux", "is_correct": True},
-                {"id": "C", "label": "Avant-pied rond", "is_correct": True},
-                {"id": "D", "label": "Pied égyptien (1er orteil le plus long)", "is_correct": False},
+                {"id": "A", "label": "Empeigne haute pour ne pas frotter sur les orteils", "is_correct": True},
+                {"id": "B", "label": "Matière souple sans coutures au-dessus des orteils", "is_correct": True},
+                {"id": "C", "label": "Eviter les talons hauts qui aggravent la déformation", "is_correct": True},
+                {"id": "D", "label": "Bout pointu pour maintenir les orteils alignés", "is_correct": False},
             ],
         },
 
-        # ══ FICHE 8 — Varices & Oedèmes ═══════════════════════════════
+        # ── FICHE 8 · Varices & Œdèmes ───────────────────────────────
         {
             "kind": "multi",
-            "topic": "Varices & Oedèmes",
-            "text": "Un client souffre de jambes lourdes et de varices. Que lui conseillez-vous ? (plusieurs réponses)",
+            "topic": "Varices & Œdèmes",
+            "text": "Un client a les jambes lourdes et les pieds qui gonflent en fin de journée. Que lui recommandez-vous ? (plusieurs réponses)",
             "choices": [
-                {"id": "A", "label": "Des bas de compression", "is_correct": True},
-                {"id": "B", "label": "Des chaussures très serrées pour soutenir la cheville", "is_correct": False},
-                {"id": "C", "label": "Des semelles adaptées au retour veineux", "is_correct": True},
-                {"id": "D", "label": "Bouger régulièrement, marcher", "is_correct": True},
+                {"id": "A", "label": "Des chaussettes ou bas de compression", "is_correct": True},
+                {"id": "B", "label": "Une chaussure avec lacets ou velcro ajustables pour s'adapter au gonflement", "is_correct": True},
+                {"id": "C", "label": "Une semelle favorisant le retour veineux", "is_correct": True},
+                {"id": "D", "label": "Une chaussure serrée pour soutenir la cheville", "is_correct": False},
             ],
         },
         {
             "kind": "single",
-            "topic": "Varices & Oedèmes",
-            "text": "Un client a les pieds qui gonflent en fin de journée. Quel type de chaussure lui éviter ?",
+            "topic": "Varices & Œdèmes",
+            "text": "Quel type de chaussette est le plus adapté pour un client souffrant de varices ?",
             "choices": [
-                {"id": "A", "label": "Chaussure avec lacets ajustables", "is_correct": False},
-                {"id": "B", "label": "Chaussure trop serrée sans possibilité d'ajustement", "is_correct": True},
-                {"id": "C", "label": "Chaussure en cuir souple", "is_correct": False},
-                {"id": "D", "label": "Chaussure avec velcro réglable", "is_correct": False},
+                {"id": "A", "label": "Chaussette fine en nylon", "is_correct": False},
+                {"id": "B", "label": "Chaussette de compression en coton ou microfibre", "is_correct": True},
+                {"id": "C", "label": "Chaussette épaisse en laine", "is_correct": False},
+                {"id": "D", "label": "Chaussette courte type socquette", "is_correct": False},
             ],
         },
 
-        # ══ FICHE 9 — Genu valgum / varum ════════════════════════════
+        # ── FICHE 9 · Genu valgum / varum ────────────────────────────
         {
             "kind": "single",
             "topic": "Genu valgum / varum",
-            "text": "Un client a les genoux en X (genu valgum). Quel type de semelle orthopédique est indiqué ?",
+            "text": "Un client a les genoux en X (genu valgum). Quel élément de semelle orthopédique est indiqué pour corriger l'appui ?",
             "choices": [
-                {"id": "A", "label": "Semelle avec éléments pronateurs (soutien côté intérieur)", "is_correct": False},
-                {"id": "B", "label": "Semelle avec éléments supinateurs (soutien côté extérieur)", "is_correct": True},
-                {"id": "C", "label": "Semelle molle sans correction", "is_correct": False},
-                {"id": "D", "label": "Aucune semelle, seule la chirurgie aide", "is_correct": False},
-            ],
-        },
-        {
-            "kind": "single",
-            "topic": "Genu valgum / varum",
-            "text": "Un client a les jambes arquées (genu varum). Vers quel côté son pied s'oriente-t-il ?",
-            "choices": [
-                {"id": "A", "label": "Vers l'intérieur (valgus)", "is_correct": False},
-                {"id": "B", "label": "Vers l'extérieur (varus)", "is_correct": True},
-                {"id": "C", "label": "Il n'y a pas de lien avec le pied", "is_correct": False},
-                {"id": "D", "label": "Vers l'avant (équin)", "is_correct": False},
+                {"id": "A", "label": "Elément pronateur côté interne (soutien de la voûte)", "is_correct": False},
+                {"id": "B", "label": "Elément supinateur côté externe (rehausse latérale externe)", "is_correct": True},
+                {"id": "C", "label": "Semelle neutre sans correction", "is_correct": False},
+                {"id": "D", "label": "Semelle avec amorti uniquement sous le talon", "is_correct": False},
             ],
         },
 
-        # ══ FICHE 10 — Cors & Durillons ══════════════════════════════
-        {
-            "kind": "single",
-            "topic": "Cors & Durillons",
-            "text": "Qu'est-ce qui provoque la formation d'un cor sur le pied ?",
-            "choices": [
-                {"id": "A", "label": "Une infection de la peau", "is_correct": False},
-                {"id": "B", "label": "Un frottement ou une pression répétée au même endroit", "is_correct": True},
-                {"id": "C", "label": "Un manque de vitamines", "is_correct": False},
-                {"id": "D", "label": "Une allergie au cuir", "is_correct": False},
-            ],
-        },
+        # ── FICHE 10 · Cors & Durillons ──────────────────────────────
         {
             "kind": "multi",
             "topic": "Cors & Durillons",
-            "text": "Parmi ces affirmations sur les cors, lesquelles sont vraies ? (plusieurs réponses)",
+            "text": "Un client revient avec un cor apparu depuis qu'il porte ses nouvelles chaussures. Quelles zones de la chaussure vérifiez-vous ? (plusieurs réponses)",
             "choices": [
-                {"id": "A", "label": "Un cor a un noyau central douloureux (kératose)", "is_correct": True},
-                {"id": "B", "label": "Le durillon est moins douloureux que le cor", "is_correct": True},
-                {"id": "C", "label": "Un cor peut évoluer vers une ulcération si négligé", "is_correct": True},
-                {"id": "D", "label": "Les cors sont causés par une infection virale", "is_correct": False},
+                {"id": "A", "label": "Les coutures intérieures qui peuvent frotter", "is_correct": True},
+                {"id": "B", "label": "La largeur de l'avant-pied par rapport au pied du client", "is_correct": True},
+                {"id": "C", "label": "La hauteur de l'empeigne au niveau des orteils", "is_correct": True},
+                {"id": "D", "label": "La couleur du cuir extérieur", "is_correct": False},
             ],
         },
 
-        # ══ FICHE 11 — Verrues ════════════════════════════════════════
-        {
-            "kind": "multi",
-            "topic": "Verrues plantaires",
-            "text": "Où attrape-t-on le plus souvent des verrues plantaires ? (plusieurs réponses)",
-            "choices": [
-                {"id": "A", "label": "A la piscine", "is_correct": True},
-                {"id": "B", "label": "Dans les vestiaires communs", "is_correct": True},
-                {"id": "C", "label": "En portant des chaussures en cuir", "is_correct": False},
-                {"id": "D", "label": "En salle de fitness", "is_correct": True},
-            ],
-        },
+        # ── FICHE 11 · Verrues ────────────────────────────────────────
         {
             "kind": "single",
             "topic": "Verrues plantaires",
-            "text": "Quelle est la cause des verrues plantaires ?",
+            "text": "Un client fréquente régulièrement la piscine et a des verrues plantaires. Quel conseil de chaussage lui donner ?",
             "choices": [
-                {"id": "A", "label": "Un champignon microscopique", "is_correct": False},
-                {"id": "B", "label": "Un virus (papillomavirus) qui se développe sur peau humide", "is_correct": True},
-                {"id": "C", "label": "Un frottement répété de la chaussure", "is_correct": False},
-                {"id": "D", "label": "Un manque d'hygiène", "is_correct": False},
+                {"id": "A", "label": "Porter des chaussures imperméables en permanence", "is_correct": False},
+                {"id": "B", "label": "Porter des sandales ou claquettes de piscine dans les zones communes humides", "is_correct": True},
+                {"id": "C", "label": "Marcher pieds nus pour endurcir la peau", "is_correct": False},
+                {"id": "D", "label": "Porter des chaussettes épaisses à la piscine", "is_correct": False},
             ],
         },
 
