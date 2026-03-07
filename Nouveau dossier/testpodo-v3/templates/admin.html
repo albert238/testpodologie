@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr"><head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/static/style.css">
+  <title>Admin – PodoTest</title>
+</head>
+<body class="page">
+  <div class="admin-wrap">
+
+    <div class="admin-header animate-in">
+      <div>
+        <div class="eyebrow">🔐 Administration</div>
+        <h1 style="font-size:2rem;margin:6px 0 4px">Tableau de bord</h1>
+        <p class="muted small">PodoTest · Résultats des candidats</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <a class="btn btn-primary" href="/admin/export.csv">⬇ Exporter CSV</a>
+        <a class="btn btn-secondary" href="/admin/logout">Déconnexion</a>
+        <a class="btn btn-secondary" href="/">← Accueil</a>
+      </div>
+    </div>
+
+    {% if sessions_data %}
+      {% set nb = sessions_data | length %}
+      {% set scores_list = sessions_data | map(attribute='score_pct') | list %}
+      {% set avg = (scores_list | sum / nb) | round | int if nb > 0 else 0 %}
+      {% set high = sessions_data | selectattr('score_pct','ge',80) | list | length %}
+
+      <div class="stats-grid animate-in" style="animation-delay:.08s">
+        <div class="stat-card stat-teal">
+          <div class="stat-num">{{ nb }}</div>
+          <div class="stat-lbl">Sessions totales</div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="stat-num">{{ sessions_data | selectattr('session.prenom') | list | length }}</div>
+          <div class="stat-lbl">Profils remplis</div>
+        </div>
+        <div class="stat-card stat-coral">
+          <div class="stat-num">{{ avg }}%</div>
+          <div class="stat-lbl">Score moyen</div>
+        </div>
+        <div class="stat-card stat-green">
+          <div class="stat-num">{{ high }}</div>
+          <div class="stat-lbl">Score ≥ 80%</div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="table-card animate-in" style="animation-delay:.12s">
+      {% if sessions_data %}
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Candidat</th>
+            <th>Rôle</th>
+            <th>Expérience</th>
+            <th>Magasin</th>
+            <th>Score</th>
+            <th>Résultat</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in sessions_data %}
+          {% set s = row.session %}
+          <tr style="cursor:pointer" onclick="toggleDetail('d{{ loop.index }}')">
+            <td style="white-space:nowrap;color:var(--text2);font-size:.82rem">
+              {{ s.created_at.strftime('%d/%m/%Y') if s.created_at else '—' }}<br>
+              <span style="font-size:.75rem">{{ s.created_at.strftime('%H:%M') if s.created_at else '' }}</span>
+            </td>
+            <td class="candidate-name">
+              {% if s.prenom or s.nom %}
+                <strong>{{ s.prenom }} {{ s.nom }}</strong>
+              {% else %}
+                <span style="color:#9ca3af;font-style:italic">Non renseigné</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.role %}
+                <span class="tag tag-teal">{{ s.role | replace('_',' ') | title }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td style="font-size:.85rem;color:var(--text2)">
+              {{ s.experience | replace('_',' ') if s.experience else '—' }}
+            </td>
+            <td style="font-size:.85rem;color:var(--text2)">
+              {{ s.shop_type | replace('_',' ') | title if s.shop_type else '—' }}
+            </td>
+            <td style="font-weight:600;font-family:'Nunito',sans-serif">
+              {{ row.correct }} / {{ row.total }}
+            </td>
+            <td>
+              {% if row.score_pct >= 80 %}
+                <span class="score-pill score-high">🏆 {{ row.score_pct }}%</span>
+              {% elif row.score_pct >= 60 %}
+                <span class="score-pill score-mid">👍 {{ row.score_pct }}%</span>
+              {% else %}
+                <span class="score-pill score-low">📚 {{ row.score_pct }}%</span>
+              {% endif %}
+              <span style="font-size:.75rem;color:var(--teal);margin-left:4px">▼</span>
+            </td>
+          </tr>
+          <!-- Ligne de détail dépliable -->
+          <tr id="d{{ loop.index }}" style="display:none;background:#f8fafc">
+            <td colspan="7" style="padding:14px 20px">
+              {% if row.detail %}
+                <div style="display:flex;flex-direction:column;gap:8px">
+                {% for d in row.detail %}
+                  <div style="background:#fff;border-radius:10px;border:1.5px solid {% if d.is_correct %}#86efac{% else %}#fca5a5{% endif %};padding:10px 14px">
+                    <div style="display:flex;align-items:flex-start;gap:8px">
+                      <span>{% if d.is_correct %}✅{% else %}❌{% endif %}</span>
+                      <div style="flex:1">
+                        <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--teal);margin-bottom:2px">{{ d.topic }}</div>
+                        <div style="font-size:.87rem;font-weight:600;margin-bottom:6px;line-height:1.4">{{ d.text }}</div>
+                        {% if d.is_correct %}
+                          <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600">
+                            ✓ {{ d.selected_labels | join(' + ') }}
+                          </span>
+                        {% else %}
+                          {% if d.selected_labels %}
+                            <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600;margin-right:4px">
+                              ✗ {{ d.selected_labels | join(' + ') }}
+                            </span>
+                          {% endif %}
+                          <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600">
+                            → {{ d.correct_labels | join(' + ') }}
+                          </span>
+                          {% if d.missing %}
+                            <div style="font-size:.76rem;color:#d97706;margin-top:4px">⚠ Oublié : {{ d.missing | join(', ') }}</div>
+                          {% endif %}
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+                </div>
+              {% else %}
+                <span style="color:#9ca3af;font-size:.85rem;font-style:italic">Aucun détail disponible</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="empty-state">
+          <p style="font-size:2.5rem">📋</p>
+          <p style="font-weight:600;margin:8px 0 4px">Aucune session enregistrée</p>
+          <p class="muted small">Les résultats apparaîtront ici après le premier quiz.</p>
+          <a class="btn btn-primary" href="/" style="margin-top:16px">Lancer un quiz</a>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+<script>
+function toggleDetail(id) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+</body></html>
